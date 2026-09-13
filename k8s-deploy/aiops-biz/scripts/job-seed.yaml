@@ -1,0 +1,180 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-seed-script
+  namespace: data-services
+data:
+  seed.py: |
+    import os
+    import sys
+    import time
+
+    import pymysql
+    import redis
+
+    MYSQL_HOST = "mysql-service"
+    MYSQL_USER = "root"
+    MYSQL_PASSWORD = os.environ["MYSQL_PASSWORD"]
+    MYSQL_DB = "aiops_mall"
+
+    REDIS_HOST = "redis-service"
+    REDIS_PORT = 6379
+
+    PRODUCTS = [
+        ("PROD_618_001", "AIOps 618 限量秒杀靶标 1号", 10000),
+        ("PROD_618_002", "AIOps 618 限量秒杀靶标 2号", 10000),
+        ("PROD_618_003", "AIOps 618 限量秒杀靶标 3号", 10000),
+        ("PROD_618_004", "AIOps 618 限量秒杀靶标 4号", 10000),
+        ("PROD_618_005", "AIOps 618 限量秒杀靶标 5号", 10000),
+    ]
+    INITIAL_USERS = 20000
+
+    def build_stock_key(product_id: str) -> str:
+        return f"seckill:stock:{product_id}"
+
+    def build_status_key(product_id: str) -> str:
+        return f"seckill:status:{product_id}"
+
+    def init_mysql():
+        print("[*] connecting to mysql...")
+        conn = pymysql.connect(
+            host=MYSQL_HOST,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            charset="utf8mb4",
+        )
+        cursor = conn.cursor()
+        cursor.execute(
+            f"CREATE DATABASE IF NOT EXISTS {MYSQL_DB} DEFAULT CHARSET utf8mb4;"
+        )
+        conn.select_db(MYSQL_DB)
+
+        print("[*] rebuilding schema...")
+        cursor.execute("DROP TABLE IF EXISTS seckill_orders;")
+        cursor.execute("DROP TABLE IF EXISTS users;")
+        cursor.execute("DROP TABLE IF EXISTS seckill_inventory;")
+
+        cursor.execute(
+            """
+            CREATE TABLE users (
+                id VARCHAR(64) PRIMARY KEY,
+                name VARCHAR(128) NOT NULL,
+                status VARCHAR(32) NOT NULL DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE seckill_inventory (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                product_id VARCHAR(64) NOT NULL UNIQUE,
+                product_name VARCHAR(128) NOT NULL,
+                stock INT NOT NULL,
+                version INT NOT NULL DEFAULT 0,
+                INDEX idx_product_id (product_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE seckill_orders (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_no VARCHAR(64) NOT NULL UNIQUE,
+                user_id VARCHAR(64) NOT NULL,
+                product_id VARCHAR(64) NOT NULL,
+                status VARCHAR(32) NOT NULL DEFAULT 'SUCCESS',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uk_user_product (user_id, product_id),
+                INDEX idx_product_status (product_id, status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """
+        )
+
+        print(f"[*] inserting seckill products: {len(PRODUCTS)}")
+        cursor.executemany(
+            """
+            INSERT INTO seckill_inventory (product_id, product_name, stock)
+            VALUES (%s, %s, %s)
+            """,
+            PRODUCTS,
+        )
+
+        user_rows = [
+            (f"USER_{index:04d}", f"测试用户{index:04d}", "active")
+            for index in range(1, INITIAL_USERS + 1)
+        ]
+        print(f"[*] inserting users: {len(user_rows)}")
+        cursor.executemany(
+            "INSERT INTO users (id, name, status) VALUES (%s, %s, %s)",
+            user_rows,
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("[+] mysql seed complete")
+
+    def init_redis():
+        print("[*] connecting to redis...")
+        client = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=0,
+            decode_responses=True,
+        )
+
+        print("[*] clearing old seckill cache...")
+        keys = client.keys("seckill:*")
+        if keys:
+            client.delete(*keys)
+
+        print(f"[*] warming redis stock cache for {len(PRODUCTS)} products")
+        for product_id, _, stock in PRODUCTS:
+            client.set(build_stock_key(product_id), stock)
+            client.set(build_status_key(product_id), 1)
+
+        print("[+] redis seed complete")
+
+    if __name__ == "__main__":
+        print("=== start environment seed job ===")
+        time.sleep(3)
+        try:
+            init_mysql()
+            init_redis()
+            print("=== environment seed finished ===")
+        except Exception as exc:
+            print(f"[-] seed failed: {exc}")
+            sys.exit(1)
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: env-init-job
+  namespace: data-services
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: python-runner
+        image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.9-slim
+        env:
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-credentials
+              key: MYSQL_ROOT_PASSWORD
+        command: ["/bin/sh", "-c"]
+        args:
+          - "pip install pymysql redis --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ && python /opt/scripts/seed.py"
+        volumeMounts:
+        - name: script-volume
+          mountPath: /opt/scripts
+      volumes:
+      - name: script-volume
+        configMap:
+          name: db-seed-script

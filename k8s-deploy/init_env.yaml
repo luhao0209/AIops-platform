@@ -1,0 +1,63 @@
+---
+- name: Kubernetes 节点底层环境初始化
+  hosts: k8s_cluster
+  become: yes
+  tasks:
+    - name: 1. 临时关闭 Swap
+      command: swapoff -a
+
+    - name: 2. 永久关闭 Swap (注释 /etc/fstab 中的 swap 行)
+      replace:
+        path: /etc/fstab
+        regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+        replace: '# \1'
+
+    - name: 3. 加载网络内核模块 (overlay, br_netfilter)
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: 4. 配置 Kubernetes 必需的 sysctl 参数
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+        reload: yes
+      loop:
+        - { name: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+        - { name: 'net.ipv4.ip_forward', value: '1' }
+        - { name: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+
+    - name: 5. 更新 apt 缓存并安装基础依赖
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: 6. 安装 containerd 容器运行时
+      apt:
+        name: containerd
+        state: present
+
+    - name: 7. 生成 containerd 默认配置并启用 SystemdCgroup
+      shell: |
+        mkdir -p /etc/containerd
+        containerd config default > /etc/containerd/config.toml
+        sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: 8. 启动并设置 containerd 开机自启
+      systemd:
+        name: containerd
+        state: restarted
+        enabled: yes

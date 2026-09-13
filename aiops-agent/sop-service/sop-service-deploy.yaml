@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sop-service-sa
+  namespace: aiops
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sop-service
+  namespace: aiops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sop-service
+  template:
+    metadata:
+      labels:
+        app: sop-service
+    spec:
+      serviceAccountName: sop-service-sa
+      nodeSelector:
+        kubernetes.io/hostname: worker-ai
+      containers:
+        - name: sop-service
+          image: aiops-sop-service:v4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9200
+          env:
+            - name: EMBEDDING_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sop-service-embedding
+                  key: EMBEDDING_API_KEY
+            - name: EMBEDDING_API_BASE
+              value: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+            - name: EMBEDDING_MODEL
+              value: "text-embedding-v4"
+            - name: EMBEDDING_DIMENSION
+              value: "1024"
+            - name: QDRANT_URL
+              value: "http://qdrant:6333"
+            - name: QDRANT_COLLECTION
+              value: "aiops_knowledge"
+            - name: TOKEN_USAGE_FILE
+              value: "/app/data/token-usage/sop-service.json"
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sop-service-embedding
+                  key: QDRANT_API_KEY
+                  optional: true
+          volumeMounts:
+            - name: agent-data
+              mountPath: /app/data
+            - name: knowledge-base
+              mountPath: /app/knowledge_base
+      volumes:
+        - name: agent-data
+          hostPath:
+            path: /root/aiops-agent/data
+            type: Directory
+        - name: knowledge-base
+          hostPath:
+            path: /root/aiops-agent/sop-service/knowledge_base
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sop-service
+  namespace: aiops
+spec:
+  selector:
+    app: sop-service
+  ports:
+    - port: 9200
+      targetPort: 9200

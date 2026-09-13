@@ -1,0 +1,30 @@
+{
+  "architecture": "amd64",
+  "archives": [
+    {
+      "file": "business-images.tar",
+      "images": [
+        "docker.io/library/aiops-gateway:20260830-5"
+      ],
+      "role": "worker-biz",
+      "sha256": "147e99e9073109998f4495e54b80d747229fad850a6ffb203e464d9abe523f7d",
+      "size": 191929344
+    },
+    {
+      "file": "agent-images.tar",
+      "images": [
+        "docker.io/library/aiops-agent:v6",
+        "docker.io/library/aiops-agent-executor:v112",
+        "docker.io/library/aiops-inspection-engine:v2",
+        "docker.io/library/aiops-change-watcher:v2",
+        "docker.io/library/aiops-sop-service:v4"
+      ],
+      "role": "worker-ai",
+      "sha256": "6cc90cdec8a6b5c523d078c3ffadefdd9a39a1db93e999104ff3a6d1ff7c2d06",
+      "size": 1867167744
+    }
+  ],
+  "containerd_namespace": "k8s.io",
+  "profile": "prebuilt-application-images",
+  "schema_version": 1
+}

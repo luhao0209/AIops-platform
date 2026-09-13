@@ -1,0 +1,7 @@
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+pydantic==2.6.3
+prometheus-client==0.20.0
+aiomysql==0.2.0
+redis==5.0.3
+cryptography==42.0.5

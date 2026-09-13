@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "planes": ["business", "platform", "observability"],
+  "retired_aliases": ["aiops-mysql", "平台mysql", "aiops数据库", "sop库"],
+  "entities": [
+    {
+      "entity_id": "biz-mysql",
+      "name": "mysql",
+      "kind": "service",
+      "namespace": "data-services",
+      "plane": "business",
+      "on_request_path": true,
+      "aliases": ["mysql", "mysql-dev", "mysql-service", "业务mysql", "业务库", "业务数据库"],
+      "notes": "秒杀业务库存/订单库"
+    },
+    {
+      "entity_id": "biz-redis",
+      "name": "redis",
+      "kind": "service",
+      "namespace": "data-services",
+      "plane": "business",
+      "on_request_path": true,
+      "aliases": ["redis", "业务redis", "缓存"],
+      "notes": "业务缓存"
+    },
+    {
+      "entity_id": "biz-gateway",
+      "name": "biz-gateway",
+      "kind": "service",
+      "namespace": "data-services",
+      "plane": "business",
+      "on_request_path": true,
+      "aliases": [
+        "biz-gateway",
+        "biz-gateway-svc",
+        "gateway",
+        "业务网关",
+        "下单网关",
+        "秒杀网关",
+        "aiops-gateway",
+        "aiops-gateway-svc"
+      ],
+      "notes": "业务入口，属于 data-services；K8s 资源名为 biz-gateway / biz-gateway-svc；aiops-gateway 仅为历史别名"
+    },
+    {
+      "entity_id": "agent-executor",
+      "name": "agent-executor",
+      "kind": "service",
+      "namespace": "aiops",
+      "plane": "platform",
+      "on_request_path": false,
+      "aliases": ["agent-executor", "对话agent", "executor"],
+      "notes": "模型执行器，不在业务请求链"
+    },
+    {
+      "entity_id": "sop-service",
+      "name": "sop-service",
+      "kind": "service",
+      "namespace": "aiops",
+      "plane": "platform",
+      "on_request_path": false,
+      "aliases": ["sop-service", "知识库服务", "sop"],
+      "notes": "SOP/知识库服务"
+    },
+    {
+      "entity_id": "inspection-engine",
+      "name": "inspection-engine",
+      "kind": "service",
+      "namespace": "aiops",
+      "plane": "platform",
+      "on_request_path": false,
+      "aliases": ["inspection-engine", "巡检", "巡检引擎"],
+      "notes": "巡检引擎"
+    },
+    {
+      "entity_id": "change-watcher",
+      "name": "change-watcher",
+      "kind": "service",
+      "namespace": "aiops",
+      "plane": "platform",
+      "on_request_path": false,
+      "aliases": ["change-watcher", "变更监听"],
+      "notes": "变更监听"
+    },
+    {
+      "entity_id": "ns-data-services",
+      "name": "data-services",
+      "kind": "namespace",
+      "namespace": "data-services",
+      "plane": "business",
+      "on_request_path": true,
+      "aliases": ["data-services", "业务命名空间", "业务空间"],
+      "notes": "范围对象，不是单个 workload"
+    },
+    {
+      "entity_id": "ns-aiops",
+      "name": "aiops",
+      "kind": "namespace",
+      "namespace": "aiops",
+      "plane": "platform",
+      "on_request_path": false,
+      "aliases": ["aiops命名空间", "平台命名空间", "aiops空间"],
+      "notes": "注意：别名避免单独用 aiops，以免和平面词混淆；匹配时优先更长别名"
+    },
+    {
+      "entity_id": "ns-monitoring",
+      "name": "monitoring",
+      "kind": "namespace",
+      "namespace": "monitoring",
+      "plane": "observability",
+      "on_request_path": false,
+      "aliases": ["monitoring", "监控命名空间", "监控空间"],
+      "notes": "可观测组件所在命名空间"
+    },
+    {
+      "entity_id": "node-worker-ai",
+      "name": "worker-ai",
+      "kind": "node",
+      "namespace": null,
+      "plane": "platform",
+      "on_request_path": false,
+      "aliases": ["worker-ai", "ai节点"],
+      "notes": "节点对象，查资源/拓扑，不是业务服务"
+    },
+    {
+      "entity_id": "node-worker-biz",
+      "name": "worker-biz",
+      "kind": "node",
+      "namespace": null,
+      "plane": "business",
+      "on_request_path": true,
+      "aliases": ["worker-biz", "业务节点"],
+      "notes": "业务侧节点"
+    },
+    {
+      "entity_id": "node-worker-monitor",
+      "name": "worker-monitor",
+      "kind": "node",
+      "namespace": null,
+      "plane": "observability",
+      "on_request_path": false,
+      "aliases": ["worker-monitor", "监控节点"],
+      "notes": "监控侧节点"
+    }
+  ]
+}

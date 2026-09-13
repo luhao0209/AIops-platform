@@ -1,0 +1,128 @@
+groups:
+  - name: aiops-mall-alerts
+    rules:
+      - alert: NodeCPUHigh
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 80
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance {{ $labels.instance }} CPU usage is high"
+          description: "CPU usage is above 80% (current value: {{ $value }}%)"
+
+      - alert: NodeMemoryHigh
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance {{ $labels.instance }} Memory usage is high"
+          description: "Memory usage is above 85% (current value: {{ $value }}%)"
+
+      - alert: MySQLLockWait
+        expr: increase(mysql_global_status_innodb_row_lock_waits[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MySQL row lock contention is sustained"
+          description: "More than 10 InnoDB row lock waits were observed in 5 minutes and the condition persisted for 2 minutes (increase: {{ $value }})."
+
+      - alert: RedisHitDrop
+        expr: (rate(redis_keyspace_hits_total[1m]) / (rate(redis_keyspace_hits_total[1m]) + rate(redis_keyspace_misses_total[1m]))) < 0.7
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis cache hit ratio low"
+          description: "Redis cache hit ratio dropped below 70%."
+
+      - alert: GatewayLatency
+        expr: rate(db_request_latency_seconds_sum[1m]) / rate(db_request_latency_seconds_count[1m]) > 0.5
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Gateway latency high"
+          description: "Gateway average latency exceeded 0.5s (current value: {{ $value }}s)."
+
+      - alert: OrderTechnicalAvailabilityLow
+        expr: |
+          (
+            1 -
+            (
+              (sum(increase(seckill_order_total{result=~"system_error|mysql_sold_out|timeout|dependency_error|queue_error"}[5m])) or vector(0))
+              /
+              clamp_min(
+                sum(increase(seckill_order_total{result!~"activity_closed|user_not_found|duplicate_request|sold_out|duplicate_order"}[5m])),
+                1
+              )
+            )
+          ) < 0.999
+          and
+          sum(increase(seckill_order_total{result!~"activity_closed|user_not_found|duplicate_request|sold_out|duplicate_order"}[5m])) > 20
+        for: 1m
+        labels:
+          severity: critical
+          namespace: data-services
+          service: biz-gateway
+        annotations:
+          summary: "Order processing technical availability is low"
+          description: "Order processing technical availability dropped below 99.9% in the last 5 minutes; normal business rejections are excluded."
+
+      - alert: GatewayCapacitySaturation
+        expr: |
+          avg(
+            gateway_inflight_requests{
+              namespace="data-services",
+              service="biz-gateway-svc"
+            }
+          ) > 20
+          and
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(
+                gateway_http_request_duration_seconds_bucket{
+                  namespace="data-services",
+                  service="biz-gateway-svc",
+                  path="/api/seckill/order"
+                }[1m]
+              )
+            )
+          ) > 0.3
+          and
+          sum(
+            rate(
+              gateway_http_requests_started_total{
+                namespace="data-services",
+                service="biz-gateway-svc",
+                path="/api/seckill/order"
+              }[1m]
+            )
+          ) > 8
+        for: 1m
+        keep_firing_for: 5m
+        labels:
+          severity: critical
+          namespace: data-services
+          service: biz-gateway
+        annotations:
+          summary: "Gateway request capacity is saturated"
+          description: "Seckill order requests are accumulating in the gateway while end-to-end P95 latency is above 300ms under sustained traffic."
+
+      - alert: PodContainerRestarted
+        expr: |
+          increase(
+            kube_pod_container_status_restarts_total{
+              namespace="data-services",
+              container!="",
+              container!="POD"
+            }[5m]
+          ) > 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container restarted"
+          description: "Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} restarted during the last 5 minutes."

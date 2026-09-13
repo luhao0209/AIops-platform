@@ -1,0 +1,4743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIOps Copilot</title>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --panel: #ffffff;
+      --line: #e5e7eb;
+      --line-strong: #d1d5db;
+      --text: #111827;
+      --subtext: #6b7280;
+      --blue: #0f172a;
+      --green: #059669;
+      --orange: #d97706;
+      --red: #dc2626;
+      --green-soft: #ecfdf5;
+      --orange-soft: #fffbeb;
+      --red-soft: #fef2f2;
+      --trace-bg: #0f172a;
+      --trace-line: #1f2937;
+      --trace-muted: #94a3b8;
+      --radius: 6px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    .page {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      padding: 12px 16px;
+      max-width: none;
+      margin: 0;
+      width: 100%;
+    }
+
+    .shell {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .top-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--green);
+      border: none;
+      background: transparent;
+    }
+
+    .ghost-btn,
+    .primary-btn,
+    .danger-btn {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ghost-btn:hover,
+    .primary-btn:hover,
+    .danger-btn:hover {
+      background: #f8fafc;
+      border-color: var(--line-strong);
+    }
+
+    .primary-btn {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    .primary-btn:hover {
+      background: #000;
+      border-color: #000;
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .danger-btn {
+      color: var(--red);
+      border-color: #ef9a9a;
+      background: transparent;
+    }
+
+    .danger-btn:hover {
+      background: var(--red-soft);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+
+    .metric-card {
+      padding: 16px 22px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .metric-card:last-child {
+      border-right: none;
+    }
+
+    .metric-card.service-level-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .metric-card-section {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .metric-card-section.service-level-section {
+      border-left: 1px solid var(--line);
+      padding-left: 18px;
+    }
+
+    .metric-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 24px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .metric-row.is-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+      align-items: center;
+    }
+
+    .metric-pair {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .metric-row.is-split .metric-pair {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .metric-meta-label {
+      color: #64748b;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .metric-row.is-split .metric-meta-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .metric-meta-value {
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .metric-meta-value.is-good {
+      color: #0d9488;
+    }
+
+    .metric-meta-value.is-warn {
+      color: var(--orange);
+    }
+
+    .metric-meta-value.is-bad {
+      color: var(--red);
+    }
+
+    .metric-link {
+      color: #0d9488;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .metric-link:hover {
+      text-decoration: underline;
+    }
+
+    .metric-stock-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      background: #f1f5f9;
+      border-radius: 999px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .metric-stock-item {
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .metric-stock-item + .metric-stock-item::before {
+      content: ",";
+      margin-right: 6px;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .metric-desc {
+      display: none;
+    }
+
+    .mini-tag {
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .tag-good {
+      color: var(--green);
+    }
+
+    .tag-warn {
+      color: var(--orange);
+    }
+
+    .tag-bad {
+      color: var(--red);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 52px 260px minmax(0, 1fr);
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      transition: grid-template-columns 0.2s ease;
+    }
+
+    .workspace.chat-sidebar-collapsed {
+      grid-template-columns: 52px 0 minmax(0, 1fr);
+    }
+
+    .workspace-rail {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 9px;
+      border-right: 1px solid var(--line);
+      background: #fafafa;
+      z-index: 1;
+    }
+
+    .chat-sidebar {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 10px;
+      border-right: 1px solid var(--line);
+      background: #fafafa;
+      opacity: 1;
+      transition: opacity 0.15s ease;
+    }
+
+    .chat-sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 36px;
+      padding: 0 4px 10px;
+    }
+
+    .chat-sidebar-toggle {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .chat-sidebar-toggle:hover {
+      background: #f1f5f9;
+    }
+
+    .alert-mode-button {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--subtext);
+      font-family: Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .alert-mode-button:hover,
+    .alert-mode-button.active {
+      color: var(--text);
+      border-color: var(--line-strong);
+      background: #f8fafc;
+    }
+
+    .alert-mode-button.alert-arrived {
+      color: var(--red);
+      border-color: #f0a5a5;
+      background: #fff7f7;
+      animation: alert-mode-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes alert-mode-pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+      }
+      50% {
+        box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.13);
+      }
+    }
+
+    .chat-new-button {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--text);
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .chat-new-button:hover {
+      background: #f8fafc;
+      border-color: var(--line-strong);
+    }
+
+    .chat-workspace-main {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .workspace.chat-sidebar-collapsed .chat-sidebar {
+      padding-left: 0;
+      padding-right: 0;
+      border-right: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .alert-incident-list {
+      display: none;
+    }
+
+    .alert-incident-filters {
+      display: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      margin-bottom: 10px;
+      padding: 3px;
+      border-radius: 7px;
+      background: #eef2f6;
+    }
+
+    .alert-incident-filter {
+      min-width: 0;
+      border: 0;
+      border-radius: 5px;
+      padding: 7px 4px;
+      background: transparent;
+      color: var(--subtext);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .alert-incident-filter:hover {
+      color: var(--text);
+    }
+
+    .alert-incident-filter.active {
+      background: #fff;
+      color: var(--text);
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+
+    .workspace.alert-analysis-mode {
+      grid-template-columns: 52px 260px minmax(0, 1fr);
+    }
+
+    .workspace.alert-analysis-mode.chat-sidebar-collapsed {
+      grid-template-columns: 52px 0 minmax(0, 1fr);
+    }
+
+    .workspace.alert-analysis-mode:not(.chat-sidebar-collapsed) .chat-sidebar {
+      padding: 12px 10px;
+      border-right: 1px solid var(--line);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .workspace.alert-analysis-mode .chat-sidebar-header {
+      display: none;
+    }
+
+    .workspace.alert-analysis-mode .alert-incident-filters {
+      display: grid;
+      flex-shrink: 0;
+    }
+
+    .workspace.alert-analysis-mode .alert-incident-list {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .alert-incident-item {
+      width: 100%;
+      padding: 10px 8px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .alert-incident-item:hover {
+      background: #f1f5f9;
+    }
+
+    .alert-incident-item.active {
+      background: #eaf0f7;
+    }
+
+    .alert-incident-summary {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .alert-incident-name {
+      display: block;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .alert-incident-target {
+      display: block;
+      overflow: hidden;
+      margin-top: 3px;
+      color: var(--subtext);
+      font-size: 12px;
+      line-height: 1.4;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .alert-incident-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 7px;
+    }
+
+    .alert-incident-time {
+      display: inline;
+      color: var(--subtext);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .alert-incident-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+      color: var(--subtext);
+      font-size: 12px;
+    }
+
+    .alert-incident-state::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .alert-incident-state.firing {
+      color: var(--red);
+    }
+
+    .alert-incident-state.firing::before {
+      background: var(--red);
+    }
+
+    .alert-incident-state.resolved {
+      color: var(--green);
+    }
+
+    .alert-incident-state.resolved::before {
+      background: var(--green);
+    }
+
+    .alert-incident-list-empty {
+      padding: 16px 8px;
+      color: var(--subtext);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .alert-analysis-view {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .workspace.alert-analysis-mode .chat-body,
+    .workspace.alert-analysis-mode .chat-input-bar {
+      display: none;
+    }
+
+    .workspace.alert-analysis-mode .alert-analysis-view {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .workspace.alert-analysis-mode .chat-session-list,
+    .workspace.alert-analysis-mode .chat-new-button {
+      display: none;
+    }
+
+    .alert-analysis-header {
+      min-height: 68px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-shrink: 0;
+    }
+
+    .alert-analysis-header p {
+      margin: 0;
+      color: var(--subtext);
+      font-size: 13px;
+    }
+
+    .alert-analysis-status {
+      color: var(--subtext);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .alert-analysis-status.running,
+    .alert-analysis-status.pending {
+      color: var(--red);
+    }
+
+    .alert-analysis-status.waiting_recheck,
+    .alert-analysis-status.waiting_approval,
+    .alert-analysis-status.monitoring {
+      color: var(--orange);
+    }
+
+    .alert-analysis-status.completed {
+      color: var(--green);
+    }
+
+    .alert-analysis-stream {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 22px 30px 50px;
+    }
+
+    .alert-analysis-empty {
+      color: var(--subtext);
+      padding: 16px 0;
+    }
+
+    .alert-analysis-event {
+      position: relative;
+      max-width: 920px;
+      padding: 0 0 24px 98px;
+    }
+
+    .alert-analysis-time {
+      position: absolute;
+      left: 0;
+      top: 2px;
+      width: 78px;
+      color: #8a94a8;
+      font-size: 12px;
+    }
+
+    .alert-analysis-event-title {
+      margin-bottom: 7px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .alert-analysis-content {
+      color: #344054;
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .alert-analysis-content > :first-child {
+      margin-top: 0;
+    }
+
+    .alert-analysis-content > :last-child {
+      margin-bottom: 0;
+    }
+
+    .alert-approval-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .alert-approval-button {
+      min-width: 92px;
+      height: 34px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .alert-approval-button.approve {
+      border-color: #b42318;
+      background: #b42318;
+      color: #fff;
+    }
+
+    .alert-approval-button:disabled {
+      cursor: wait;
+      opacity: .55;
+    }
+
+    .alert-analysis-event.error .alert-analysis-event-title,
+    .alert-analysis-event.error .alert-analysis-content {
+      color: #b42318;
+    }
+
+    .alert-analysis-evidence {
+      margin-top: 8px;
+      color: var(--subtext);
+      font-size: 12px;
+    }
+
+    .alert-analysis-evidence pre {
+      overflow: auto;
+      padding: 10px 12px;
+      background: #f7f8fa;
+      border-radius: 6px;
+    }
+
+    .workspace-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+
+    .workspace-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .inspection-ops {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .inspection-status {
+      font-size: 13px;
+      color: var(--subtext);
+    }
+
+    .chat-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .bubble {
+      max-width: 88%;
+      line-height: 1.6;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+      background: #f3f4f6;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+      white-space: pre-wrap;
+    }
+
+    .bubble.agent {
+      align-self: flex-start;
+      color: var(--text);
+      border-left: 2px solid var(--text);
+      padding: 4px 0 4px 16px;
+      white-space: normal;
+    }
+
+    .bubble.agent p {
+      margin: 0 0 6px;
+    }
+
+    .bubble.agent p:last-child {
+      margin-bottom: 0;
+    }
+
+    .bubble.agent h1,
+    .bubble.agent h2,
+    .bubble.agent h3,
+    .bubble.agent h4 {
+      margin: 12px 0 6px;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    .bubble.agent h1 { font-size: 18px; }
+    .bubble.agent h2 { font-size: 16px; }
+    .bubble.agent h3 { font-size: 15px; }
+    .bubble.agent h4 { font-size: 14px; }
+
+    .bubble.agent ul,
+    .bubble.agent ol {
+      margin: 6px 0;
+      padding-left: 20px;
+    }
+
+    .bubble.agent li {
+      margin: 2px 0;
+    }
+
+    .bubble.agent li + li {
+      margin-top: 4px;
+    }
+
+    .bubble.agent code {
+      background: #f3f4f6;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .bubble.agent pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 12px;
+      border-radius: 6px;
+      overflow: auto;
+      margin: 8px 0;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .bubble.agent pre code {
+      background: transparent;
+      color: inherit;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .bubble.agent table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+
+    .bubble.agent th,
+    .bubble.agent td {
+      border: 1px solid var(--line-strong);
+      padding: 6px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .bubble.agent th {
+      background: rgba(0, 0, 0, 0.04);
+      font-weight: 600;
+    }
+
+    .chat-input-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+      background: var(--panel);
+    }
+
+    .chat-input {
+      flex: 1;
+      min-width: 0;
+      min-height: 46px;
+      max-height: 144px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 12px 14px;
+      outline: none;
+      background: var(--panel);
+      font: inherit;
+      line-height: 1.5;
+      resize: none;
+      overflow-y: hidden;
+    }
+
+    .chat-input:focus {
+      border-color: #94a3b8;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--panel);
+    }
+
+    .sidebar-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .sidebar-tab {
+      border: none;
+      background: transparent;
+      padding: 16px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--subtext);
+      border-right: 1px solid var(--line);
+    }
+
+    .sidebar-tab:last-child {
+      border-right: none;
+    }
+
+    .sidebar-tab.active {
+      color: var(--text);
+      background: #fafafa;
+    }
+
+    .sidebar-panel {
+      display: none;
+      min-height: 0;
+      flex: 1;
+      overflow: auto;
+    }
+
+    .sidebar-panel.active {
+      display: block;
+    }
+
+    .timeline {
+      padding: 14px 16px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .timeline-item {
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .timeline-item:last-child {
+      border-bottom: none;
+    }
+
+    .timeline-time {
+      font-size: 12px;
+      color: var(--subtext);
+      margin-bottom: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .timeline-summary {
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .trace-list {
+      padding: 0;
+    }
+
+    .trace-session {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .trace-session-header {
+      padding: 10px 14px;
+      background: #fafafa;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .trace-session-meta {
+      color: var(--subtext);
+      font-size: 12px;
+    }
+
+    .trace-row {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .trace-summary {
+      display: grid;
+      grid-template-columns: 18px 64px minmax(0, 1fr) 48px 72px;
+      align-items: start;
+      gap: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .trace-time,
+    .trace-duration,
+    .trace-status {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .trace-row:nth-child(odd) .trace-summary {
+      background: #fff;
+    }
+
+    .trace-row:nth-child(even) .trace-summary {
+      background: #fcfcfd;
+    }
+
+    .trace-summary:hover {
+      background: #f8fafc !important;
+    }
+
+    .trace-toggle {
+      color: var(--subtext);
+    }
+
+    .trace-time {
+      color: var(--subtext);
+    }
+
+    .trace-name {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .trace-name-main {
+      font-weight: 600;
+      color: var(--text);
+      overflow: visible;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    .trace-name-en-full {
+      margin-top: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: var(--subtext);
+      word-break: break-all;
+    }
+
+    .trace-duration {
+      color: var(--subtext);
+      text-align: right;
+    }
+
+    .trace-status {
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .trace-status.success {
+      color: var(--green);
+    }
+
+    .trace-status.failed {
+      color: var(--red);
+    }
+
+    .trace-detail {
+      display: none;
+      padding: 0 14px 14px;
+      background: #fff;
+    }
+
+    .trace-row.open .trace-detail {
+      display: block;
+    }
+
+    .trace-block-title {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: var(--trace-muted);
+      margin: 10px 0 8px;
+    }
+
+    .trace-code,
+    .trace-query {
+      background: var(--trace-bg);
+      color: #e5e7eb;
+      border-radius: 0;
+      border: none;
+      padding: 12px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.65;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .trace-meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--subtext);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .empty {
+      color: var(--subtext);
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.28);
+      z-index: 20;
+      padding: 24px;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-panel {
+      width: min(1400px, 96vw);
+      height: min(860px, 92vh);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-subtitle {
+      margin-top: 5px;
+      color: var(--subtext);
+      font-size: 12px;
+    }
+
+    .modal-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-sessions-panel {
+      width: min(720px, 92vw);
+      height: min(680px, 86vh);
+    }
+
+    .chat-session-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 10px 8px;
+    }
+
+    .chat-session-item {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 26px;
+      align-items: center;
+      gap: 2px;
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+    }
+
+    .chat-session-item:hover {
+      background: #f1f5f9;
+    }
+
+    .chat-session-item.active {
+      background: #f8fafc;
+    }
+
+    .chat-session-open {
+      min-width: 0;
+      padding: 9px 8px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .chat-session-title {
+      display: block;
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.4;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chat-session-item.active .chat-session-title {
+      font-weight: 600;
+    }
+
+    .chat-session-delete {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--subtext);
+      cursor: pointer;
+      opacity: 0;
+    }
+
+    .chat-session-item:hover .chat-session-delete,
+    .chat-session-item.active .chat-session-delete {
+      opacity: 1;
+    }
+
+    .chat-session-delete:hover {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .chat-session-time {
+      color: var(--subtext);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .close-btn {
+      border: none;
+      background: transparent;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--subtext);
+    }
+
+    .kb-layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .kb-nav {
+      width: 320px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #fcfcfd;
+    }
+
+    .kb-menu {
+      padding: 18px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .kb-menu-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      background: #fff;
+      transition: all 0.2s;
+    }
+
+    .kb-menu-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .kb-menu-item.active {
+      border-color: #94a3b8;
+      background: #f8fafc;
+    }
+
+    .kb-menu-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .kb-menu-desc {
+      font-size: 12px;
+      color: var(--subtext);
+      line-height: 1.6;
+    }
+
+    .nav-section {
+      padding: 16px;
+      overflow: auto;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .nav-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--subtext);
+      margin-bottom: 12px;
+    }
+
+    .nav-item {
+      border-left: 2px solid transparent;
+      padding: 10px 10px 10px 12px;
+      cursor: pointer;
+      margin-bottom: 6px;
+      border-radius: 0 6px 6px 0;
+      background: transparent;
+    }
+
+    .nav-item:hover {
+      background: #f8fafc;
+    }
+
+    .nav-item.active {
+      border-left-color: var(--blue);
+      background: #fff;
+    }
+
+    .nav-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .nav-item-meta {
+      font-size: 12px;
+      color: var(--subtext);
+      line-height: 1.6;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--subtext);
+      background: transparent;
+    }
+
+    .kb-content {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+
+    .kb-toolbar {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .toolbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-right: auto;
+    }
+
+    .toolbar-input {
+      min-width: 280px;
+      flex: 1;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .kb-content-scroll {
+      padding: 24px 28px 32px;
+      overflow: auto;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .content-card {
+      max-width: 920px;
+    }
+
+    .content-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .content-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--subtext);
+      font-size: 13px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .content-section {
+      margin-bottom: 28px;
+    }
+
+    .content-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .content-text,
+    .content-list {
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.75;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .content-list {
+      padding-left: 20px;
+    }
+
+    .content-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .form-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 920px;
+    }
+
+    .form-grid input,
+    .form-grid textarea,
+    .form-grid select {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+      background: var(--bg);
+      transition: border 0.2s;
+      resize: vertical;
+    }
+
+    .form-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--subtext);
+      font-weight: 500;
+    }
+
+    .search-result-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: #fff;
+    }
+
+    .search-result-score {
+      font-size: 12px;
+      color: var(--subtext);
+      margin-bottom: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .review-placeholder {
+      max-width: 820px;
+      color: var(--subtext);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1280px) {
+      .page {
+        padding: 8px 10px;
+      }
+
+      .content {
+        grid-template-columns: minmax(0, 1fr) 320px;
+      }
+
+      .metric-card {
+        padding: 14px 16px;
+      }
+
+      .workspace-header,
+      .topbar,
+      .chat-input-bar {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .chat-body {
+        padding: 16px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .main {
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .sidebar {
+        min-height: 0;
+        max-height: 42vh;
+      }
+
+      .page {
+        padding: 12px;
+      }
+
+      .metrics-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-card {
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .metric-card:last-child {
+        border-bottom: none;
+      }
+
+      .metric-card.service-level-card {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+
+      .chat-input-bar {
+        flex-direction: column;
+      }
+
+      .alert-analysis-header {
+        padding: 12px 16px;
+        align-items: flex-start;
+      }
+
+      .alert-analysis-stream {
+        padding: 18px 16px 36px;
+      }
+
+      .alert-analysis-event {
+        padding-left: 0;
+      }
+
+      .alert-analysis-time {
+        position: static;
+        width: auto;
+        margin-bottom: 5px;
+      }
+
+      .kb-layout {
+        flex-direction: column;
+      }
+
+      .kb-nav {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .kb-content-scroll {
+        padding: 20px;
+      }
+
+      .trace-summary {
+        grid-template-columns: 18px 66px 1fr 46px 72px;
+      }
+    }
+    .incident-metric-card {
+      cursor: pointer;
+      position: relative;
+      transition: background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .incident-metric-card:hover,
+    .incident-metric-card:focus-visible {
+      background: #f8fafc;
+      box-shadow: inset 3px 0 0 var(--blue);
+      outline: none;
+    }
+
+    .metric-card-hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .incident-drawer {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      justify-content: flex-end;
+      background: rgba(15, 23, 42, 0.28);
+      backdrop-filter: blur(2px);
+    }
+
+    .incident-drawer.show {
+      display: flex;
+    }
+
+    .incident-drawer-panel {
+      width: min(1120px, 94vw);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      border-left: 1px solid var(--line-strong);
+      box-shadow: -24px 0 70px rgba(15, 23, 42, 0.16);
+      animation: incident-drawer-enter 220ms ease-out;
+    }
+
+    @keyframes incident-drawer-enter {
+      from { transform: translateX(28px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .incident-drawer-header {
+      min-height: 92px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .incident-eyebrow {
+      margin-bottom: 5px;
+      color: #0f766e;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+    }
+
+    .incident-drawer-header h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .incident-drawer-header p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .incident-drawer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .incident-toolbar {
+      min-height: 58px;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .incident-filter {
+      display: inline-flex;
+      padding: 3px;
+      gap: 2px;
+      background: #eef2f7;
+      border-radius: 9px;
+    }
+
+    .incident-filter button {
+      min-width: 76px;
+      padding: 7px 12px;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 7px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .incident-filter button.active {
+      color: var(--text);
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+      font-weight: 700;
+    }
+
+    .incident-list-summary {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .incident-drawer-body {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 350px minmax(0, 1fr);
+    }
+
+    .incident-list-pane {
+      min-width: 0;
+      overflow-y: auto;
+      background: #fff;
+      border-right: 1px solid var(--line);
+    }
+
+    .incident-list {
+      padding: 12px;
+    }
+
+    .incident-list-item {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 14px;
+      text-align: left;
+      background: #fff;
+      border: 1px solid transparent;
+      border-bottom-color: var(--line);
+      border-radius: 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .incident-list-item:hover {
+      background: #f8fafc;
+    }
+
+    .incident-list-item.active {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .incident-list-title-row,
+    .incident-list-meta,
+    .incident-detail-title-row,
+    .incident-section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .incident-list-title {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--text);
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .incident-list-target {
+      margin: 7px 0;
+      overflow: hidden;
+      color: #475569;
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .incident-list-meta {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .incident-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .incident-status::before {
+      width: 6px;
+      height: 6px;
+      content: "";
+      background: currentColor;
+      border-radius: 50%;
+    }
+
+    .incident-status.firing {
+      color: #b42318;
+      background: #fef3f2;
+    }
+
+    .incident-status.resolved {
+      color: #027a48;
+      background: #ecfdf3;
+    }
+
+    .incident-detail {
+      min-width: 0;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .incident-detail-hero {
+      padding: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .incident-detail-title-row {
+      align-items: flex-start;
+    }
+
+    .incident-detail-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .incident-detail-subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .incident-facts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 20px;
+      overflow: hidden;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .incident-fact {
+      min-height: 78px;
+      padding: 13px;
+      background: #fff;
+    }
+
+    .incident-fact-label {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .incident-fact-value {
+      margin-top: 7px;
+      overflow-wrap: anywhere;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .incident-section {
+      margin-top: 16px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .incident-section-heading h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .incident-section-heading span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .incident-summary-text {
+      margin: 14px 0 0;
+      color: #334155;
+      line-height: 1.7;
+    }
+
+    .incident-tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 14px;
+    }
+
+    .incident-tag {
+      padding: 5px 8px;
+      color: #475569;
+      background: #f1f5f9;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .incident-timeline {
+      margin-top: 16px;
+    }
+
+    .incident-event {
+      position: relative;
+      margin-left: 6px;
+      padding: 0 0 20px 24px;
+      border-left: 1px solid #cbd5e1;
+    }
+
+    .incident-event:last-child {
+      padding-bottom: 0;
+      border-left-color: transparent;
+    }
+
+    .incident-event::before {
+      position: absolute;
+      top: 3px;
+      left: -5px;
+      width: 9px;
+      height: 9px;
+      content: "";
+      background: #64748b;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px #94a3b8;
+    }
+
+    .incident-event.resolved_notification::before {
+      background: #12b76a;
+      box-shadow: 0 0 0 1px #12b76a;
+    }
+
+    .incident-event.firing_notification::before {
+      background: #f04438;
+      box-shadow: 0 0 0 1px #f04438;
+    }
+
+    .incident-event-title {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .incident-event-time {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .incident-event-summary {
+      margin-top: 7px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .incident-empty {
+      padding: 36px 20px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .incident-empty-detail {
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .incident-empty-detail strong {
+      color: var(--text);
+      font-size: 17px;
+    }
+
+    @media (max-width: 900px) {
+      .incident-drawer-panel {
+        width: 100vw;
+      }
+
+      .incident-drawer-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(180px, 34vh) minmax(0, 1fr);
+      }
+
+      .incident-list-pane {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .incident-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .incident-drawer-header,
+      .incident-detail {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-dot"></div>
+          <div>AIOps Copilot</div>
+        </div>
+        <div class="top-actions">
+          <div class="top-status" id="top-status">✓ 运行平稳</div>
+          <button class="ghost-btn" id="start-inspection-btn">▶ 启动巡检</button>
+          <button class="ghost-btn" id="open-sop-btn">知识库</button>
+          <button class="ghost-btn" id="logout-btn">退出</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="main">
+          <div class="metrics-bar">
+            <div class="metric-card">
+              <div class="metric-row is-split">
+                <div class="metric-pair">
+                  <span class="metric-meta-label" title="当前网关实例生命周期内累计的有效购买结果：剔除 duplicate_order / duplicate_request；格式为成功数 / 失败数。">订单购买成功/失败：</span>
+                  <span class="metric-meta-value" id="metric-sr">--</span>
+                </div>
+                <div class="metric-pair">
+                  <span class="metric-meta-label" title="最近15分钟购买成功率KPI：剔除 duplicate_order / duplicate_request；无请求时显示 NoData。">15分钟购买成功率：</span>
+                  <span class="metric-meta-value" id="metric-sr-recent">NoData</span>
+                </div>
+              </div>
+              <div class="metric-row is-split">
+                <div class="metric-pair">
+                  <span class="metric-meta-label" title="最近 15 分钟网关访问 Redis / MySQL 等依赖的平均延迟。">依赖平均延迟：</span>
+                  <span class="metric-meta-value" id="metric-latency">--</span>
+                </div>
+                <div class="metric-pair">
+                  <span class="metric-meta-label" title="最近15分钟用于计算购买成功率的请求数，剔除重复下单和重复请求。">15分钟购买请求：</span>
+                  <span class="metric-meta-value" id="metric-orders">--</span>
+                </div>
+              </div>
+              <div class="metric-row is-split">
+                <div class="metric-pair">
+                  <span class="metric-meta-label">业务监控：</span>
+                  <a class="metric-link" id="metric-dash-biz" href="#" target="_blank" rel="noopener noreferrer">业务监控</a>
+                </div>
+                <div class="metric-pair">
+                  <span class="metric-meta-label">节点监控：</span>
+                  <a class="metric-link" id="metric-dash-node" href="#" target="_blank" rel="noopener noreferrer">节点监控</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="metric-card service-level-card">
+              <div class="metric-card-section">
+                <div class="metric-row">
+                  <span class="metric-meta-label">告警总数：</span>
+                  <span class="metric-meta-value" id="metric-alerts">--</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-meta-label" title="最近5分钟订单处理技术可用性。">5分钟SLI：</span>
+                  <span class="metric-meta-value" id="metric-sli-5m">NoData</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-meta-label" title="最近5分钟技术错误率相对于SLO允许错误率的消耗倍数。">Burn Rate：</span>
+                  <span class="metric-meta-value" id="metric-burn-rate">NoData</span>
+                </div>
+              </div>
+
+              <div class="metric-card-section service-level-section">
+                <div class="metric-row">
+                  <span class="metric-meta-label" title="最近30天订单处理技术可用性；售罄、重复购买、活动关闭、用户校验拒绝等正常业务结果不消耗错误预算。">30天技术SLI：</span>
+                  <span class="metric-meta-value" id="metric-sli">NoData</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-meta-label" title="用于衡量服务水平和计算错误预算的内部目标。">SLO目标：</span>
+                  <span class="metric-meta-value" id="metric-sla">99.90%</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-meta-label" title="最近30天滚动窗口内的剩余错误预算；0% 表示允许的失败额度已耗尽。">错误预算：</span>
+                  <span class="metric-meta-value" id="metric-error-budget">--</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-row is-split">
+                <div class="metric-pair">
+                  <span class="metric-meta-label">今日消耗：</span>
+                  <span class="metric-meta-value" id="metric-token">--</span>
+                </div>
+                <div class="metric-pair">
+                  <span class="metric-meta-label">总消耗：</span>
+                  <span class="metric-meta-value" id="metric-token-all">--</span>
+                </div>
+              </div>
+              <div class="metric-row">
+                <span class="metric-meta-label">主 Agent：</span>
+                <span class="metric-meta-value" id="metric-token-main">--</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-meta-label">向量化 Agent：</span>
+                <span class="metric-meta-value" id="metric-token-vector">--</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="workspace" id="chat-workspace">
+            <nav class="workspace-rail" aria-label="工作区切换">
+              <button
+                class="chat-sidebar-toggle"
+                id="toggle-chat-sidebar-btn"
+                type="button"
+                title="展开或收起会话栏"
+                aria-label="展开或收起会话栏"
+              >
+                ☰
+              </button>
+
+              <button
+                class="alert-mode-button"
+                id="alert-mode-btn"
+                type="button"
+                title="查看告警分析"
+                aria-label="查看告警分析"
+              >
+                !
+              </button>
+            </nav>
+
+            <aside class="chat-sidebar" id="chat-sidebar">
+              <div class="chat-sidebar-header">
+                <button class="chat-new-button" id="new-chat-btn" type="button">
+                  <span class="chat-sidebar-label">新对话</span>
+                </button>
+              </div>
+
+              <div class="chat-session-list" id="chat-session-list">
+                <div class="empty">会话列表加载中...</div>
+              </div>
+
+              <div class="alert-incident-filters" id="alert-incident-filters">
+                <button
+                  class="alert-incident-filter"
+                  type="button"
+                  data-alert-list-filter="firing"
+                >告警中</button>
+                <button
+                  class="alert-incident-filter active"
+                  type="button"
+                  data-alert-list-filter="resolved"
+                >已恢复</button>
+              </div>
+
+              <div class="alert-incident-list" id="alert-incident-list">
+                <div class="alert-incident-list-empty">告警记录加载中...</div>
+              </div>
+            </aside>
+
+            <div class="chat-workspace-main">
+              <div class="chat-body" id="chat-body">
+                <div class="bubble agent">
+                  你好！你现在可以直接和我对话，也可以先执行巡检，再结合变更和知识库继续排查。
+                </div>
+              </div>
+
+              <div class="chat-input-bar">
+                <textarea
+                  id="chat-input"
+                  class="chat-input"
+                  rows="1"
+                  placeholder="输入指令，如：现在系统情况怎么样？"
+                ></textarea>
+                <button id="send-btn" class="primary-btn">执行</button>
+              </div>
+
+              <section
+                class="alert-analysis-view"
+                id="alert-analysis-view"
+                aria-hidden="true"
+              >
+                <header class="alert-analysis-header">
+                  <p id="alert-analysis-subtitle">选择左侧告警记录查看分析过程。</p>
+                  <span class="alert-analysis-status" id="alert-analysis-status">空闲</span>
+                </header>
+                <div class="alert-analysis-stream" id="alert-analysis-stream">
+                  <div class="alert-analysis-empty">当前没有告警分析任务。</div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <div class="sidebar-tabs">
+            <button class="sidebar-tab active" data-panel="changes">变更归档</button>
+            <button class="sidebar-tab" data-panel="trace">当前 Trace</button>
+          </div>
+
+          <div class="sidebar-panel active" id="sidebar-panel-changes">
+            <div class="timeline" id="change-timeline">
+              <div class="empty">加载中...</div>
+            </div>
+          </div>
+
+          <div class="sidebar-panel" id="sidebar-panel-trace">
+            <div class="trace-list" id="trace-list">
+              <div class="empty">当前还没有工具调用记录。</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="incident-drawer" id="incident-drawer" aria-hidden="true">
+    <section
+      class="incident-drawer-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="incident-drawer-title"
+    >
+      <header class="incident-drawer-header">
+        <div>
+          <div class="incident-eyebrow">ALERT LIFECYCLE</div>
+          <h2 id="incident-drawer-title">Incident 档案</h2>
+          <p>只展示 Alertmanager 已确认的生命周期事实，不执行自动归因或处置。</p>
+        </div>
+        <div class="incident-drawer-actions">
+          <button class="ghost-btn" id="refresh-incidents-btn" type="button">刷新</button>
+          <button class="close-btn" id="close-incidents-btn" type="button" aria-label="关闭">×</button>
+        </div>
+      </header>
+
+      <div class="incident-toolbar">
+        <div class="incident-filter" role="tablist" aria-label="Incident 状态筛选">
+          <button class="active" data-incident-filter="all" type="button">全部</button>
+          <button data-incident-filter="firing" type="button">Firing</button>
+          <button data-incident-filter="resolved" type="button">Resolved</button>
+        </div>
+        <div class="incident-list-summary" id="incident-list-summary">等待加载</div>
+      </div>
+
+      <div class="incident-drawer-body">
+        <aside class="incident-list-pane">
+          <div class="incident-list" id="incident-list">
+            <div class="incident-empty">打开档案后加载 Incident。</div>
+          </div>
+        </aside>
+        <main class="incident-detail" id="incident-detail">
+          <div class="incident-empty incident-empty-detail">
+            <strong>选择一条 Incident</strong>
+            <span>这里会显示发生、重发、恢复和历史出现次数。</span>
+          </div>
+        </main>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal" id="sop-modal">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div class="modal-title">知识库</div>
+        <button class="close-btn" id="close-sop-btn">×</button>
+      </div>
+
+      <div class="kb-layout">
+        <div class="kb-nav">
+          <div class="kb-menu">
+            <div class="kb-menu-item active" data-kb-view="sop">
+              <div class="kb-menu-title">SOP</div>
+              <div class="kb-menu-desc">项目内工作流型知识，允许按环境做弹性排查。</div>
+            </div>
+            <div class="kb-menu-item" data-kb-view="experience">
+              <div class="kb-menu-title">运维经验文档</div>
+              <div class="kb-menu-desc">偏 Skill 的排障方法论、案例与经验总结。</div>
+            </div>
+            <div class="kb-menu-item" data-kb-view="review">
+              <div class="kb-menu-title">审核</div>
+              <div class="kb-menu-desc">文件主库模式下，审核能力后续按工作流补齐。</div>
+            </div>
+            <div class="kb-menu-item" data-kb-view="create">
+              <div class="kb-menu-title">添加</div>
+              <div class="kb-menu-desc">人工新增 SOP 或运维经验文档，直接生成文件。</div>
+            </div>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title" id="kb-list-title">SOP 列表</div>
+            <div id="kb-nav-list"></div>
+          </div>
+        </div>
+
+        <div class="kb-content">
+          <div class="kb-toolbar">
+            <div class="toolbar-title" id="kb-toolbar-title">知识检索测试</div>
+            <input id="knowledge-search-input" class="toolbar-input" type="text" placeholder="输入故障现象，如：下单成功率下降应该怎么排查" />
+            <button class="ghost-btn" id="knowledge-search-btn">检索</button>
+            <button class="ghost-btn" id="knowledge-sync-btn">同步向量库</button>
+          </div>
+
+          <div class="kb-content-scroll" id="kb-content-scroll">
+            <div class="empty">请选择左侧条目，或在顶部执行一次知识检索。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatBody = document.getElementById("chat-body");
+    const chatInput = document.getElementById("chat-input");
+    const sendBtn = document.getElementById("send-btn");
+    const changeTimeline = document.getElementById("change-timeline");
+    const traceList = document.getElementById("trace-list");
+    const startInspectionBtn = document.getElementById("start-inspection-btn");
+    const sidebarTabs = Array.from(document.querySelectorAll(".sidebar-tab"));
+    const sidebarPanels = {
+      changes: document.getElementById("sidebar-panel-changes"),
+      trace: document.getElementById("sidebar-panel-trace")
+    };
+
+    const sopModal = document.getElementById("sop-modal");
+    const openSopBtn = document.getElementById("open-sop-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const closeSopBtn = document.getElementById("close-sop-btn");
+    const chatWorkspace = document.getElementById("chat-workspace");
+    const toggleChatSidebarBtn = document.getElementById("toggle-chat-sidebar-btn");
+    const alertModeBtn = document.getElementById("alert-mode-btn");
+    const alertAnalysisView = document.getElementById("alert-analysis-view");
+    const alertAnalysisSubtitle = document.getElementById("alert-analysis-subtitle");
+    const alertAnalysisStatus = document.getElementById("alert-analysis-status");
+    const alertAnalysisStream = document.getElementById("alert-analysis-stream");
+    const alertIncidentList = document.getElementById("alert-incident-list");
+    const alertIncidentFilterButtons = Array.from(
+      document.querySelectorAll("[data-alert-list-filter]")
+    );
+    const newChatBtn = document.getElementById("new-chat-btn");
+    const chatSessionList = document.getElementById("chat-session-list");
+    const kbNavList = document.getElementById("kb-nav-list");
+    const kbListTitle = document.getElementById("kb-list-title");
+    const kbContentScroll = document.getElementById("kb-content-scroll");
+    const kbToolbarTitle = document.getElementById("kb-toolbar-title");
+    const kbMenuItems = Array.from(document.querySelectorAll(".kb-menu-item"));
+    const knowledgeSearchInput = document.getElementById("knowledge-search-input");
+    const knowledgeSearchBtn = document.getElementById("knowledge-search-btn");
+    const knowledgeSyncBtn = document.getElementById("knowledge-sync-btn");
+    const incidentDrawer = document.getElementById("incident-drawer");
+    const closeIncidentsBtn = document.getElementById("close-incidents-btn");
+    const refreshIncidentsBtn = document.getElementById("refresh-incidents-btn");
+    const incidentList = document.getElementById("incident-list");
+    const incidentDetail = document.getElementById("incident-detail");
+    const incidentListSummary = document.getElementById("incident-list-summary");
+    const incidentFilterButtons = Array.from(
+      document.querySelectorAll("[data-incident-filter]")
+    );
+
+    function getOrCreateChatSessionId() {
+      const storageKey = "aiops_chat_session_id";
+      let sessionId = sessionStorage.getItem(storageKey);
+      if (!sessionId) {
+        const randomId = globalThis.crypto?.randomUUID?.()
+          || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        sessionId = `web-${randomId}`;
+        sessionStorage.setItem(storageKey, sessionId);
+      }
+      return sessionId;
+    }
+
+    let chatSessionId = getOrCreateChatSessionId();
+    const CHAT_SIDEBAR_STORAGE_KEY = "aiops_chat_sidebar_collapsed";
+    const ALERT_SIDEBAR_STORAGE_KEY = "aiops_alert_sidebar_collapsed";
+
+    function sidebarStorageKey(mode) {
+      return mode === "alert"
+        ? ALERT_SIDEBAR_STORAGE_KEY
+        : CHAT_SIDEBAR_STORAGE_KEY;
+    }
+
+    function storedSidebarCollapsed(mode) {
+      const storedValue = localStorage.getItem(sidebarStorageKey(mode));
+      if (storedValue !== null) return storedValue === "true";
+      return mode === "chat" && window.innerWidth < 1200;
+    }
+
+    function setSidebarCollapsed(collapsed, mode = alertAnalysisState.mode) {
+      chatWorkspace.classList.toggle(
+        "chat-sidebar-collapsed",
+        collapsed
+      );
+
+      localStorage.setItem(
+        sidebarStorageKey(mode),
+        String(collapsed)
+      );
+
+      if (mode === "alert") {
+        toggleChatSidebarBtn.title = "查看对话";
+        alertModeBtn.title = collapsed ? "展开告警栏" : "收起告警栏";
+      } else {
+        toggleChatSidebarBtn.title = collapsed ? "展开会话栏" : "收起会话栏";
+        if (!alertModeBtn.classList.contains("alert-arrived")) {
+          alertModeBtn.title = "查看告警分析";
+        }
+      }
+    }
+
+    function initializeChatSidebar() {
+      setSidebarCollapsed(storedSidebarCollapsed("chat"), "chat");
+    }
+
+    const chatHistory = [];
+    const MAX_TRACE_SESSIONS = 20;
+    let traceSessions = [];
+    let currentKnowledgeView = "sop";
+    let knowledgeState = {
+      records: [],
+      sops: [],
+      experiences: []
+    };
+    let incidentState = {
+      filter: "all",
+      items: [],
+      selectedId: "",
+      loading: false
+    };
+    let alertAnalysisState = {
+      mode: "chat",
+      selectedIncidentId: "",
+      analysisId: "",
+      status: "",
+      lastSequence: 0,
+      events: [],
+      knownFiringIds: new Set(),
+      initialized: false,
+      autoSwitchTimer: null,
+      eventPollRunning: false,
+      lastMonitoringPollAt: 0,
+      incidentPollRunning: false,
+      incidentFilter: "resolved",
+      items: []
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function redirectToLogin() {
+      const next = `${location.pathname}${location.search}${location.hash}`;
+      location.replace(`/login?next=${encodeURIComponent(next)}`);
+    }
+
+    async function authenticatedFetch(url, options = {}) {
+      const response = await fetch(url, options);
+      if (response.status === 401) {
+        redirectToLogin();
+        throw new Error("登录状态已失效，请重新登录");
+      }
+      return response;
+    }
+
+    async function loadJson(url, options = {}) {
+      const response = await authenticatedFetch(url, options);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `${response.status} ${response.statusText}`);
+      }
+      return response.json();
+    }
+
+    async function postJson(url, payload) {
+      return loadJson(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload ?? {})
+      });
+    }
+
+    function setWorkspaceMode(mode) {
+      const alertMode = mode === "alert";
+
+      alertAnalysisState.mode = alertMode ? "alert" : "chat";
+      chatWorkspace.classList.toggle("alert-analysis-mode", alertMode);
+      alertModeBtn.classList.toggle("active", alertMode);
+      alertAnalysisView.setAttribute("aria-hidden", String(!alertMode));
+      const currentMode = alertMode ? "alert" : "chat";
+      setSidebarCollapsed(storedSidebarCollapsed(currentMode), currentMode);
+    }
+
+    function analysisEventLabel(eventType) {
+      const labels = {
+        analysis_started: "收到告警",
+        assessment: "分析判断",
+        skill_selected: "已选择 Skill",
+        tool_call: "调用工具",
+        tool_result: "工具结果",
+        approval_requested: "等待审批",
+        approval_result: "审批结果",
+        action_result: "执行结果",
+        recovery_check: "恢复检查",
+        conclusion: "最终结论",
+        error: "分析异常"
+      };
+      return labels[eventType] || eventType || "分析事件";
+    }
+
+    function formatAnalysisEventTime(value) {
+      if (!value) return "--:--:--";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "--:--:--";
+
+      return new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).format(date);
+    }
+
+    function alertIncidentStatusLabel(status) {
+      return status === "firing" ? "告警中" : "已恢复";
+    }
+
+    function renderAlertIncidentList() {
+      alertIncidentFilterButtons.forEach(button => {
+        button.classList.toggle(
+          "active",
+          button.dataset.alertListFilter === alertAnalysisState.incidentFilter
+        );
+      });
+
+      const visibleItems = alertAnalysisState.items.filter(
+        item => item.status === alertAnalysisState.incidentFilter
+      );
+
+      if (!visibleItems.length) {
+        const emptyLabel = alertAnalysisState.incidentFilter === "firing"
+          ? "当前没有正在发生的告警。"
+          : "当前没有已恢复的告警。";
+        alertIncidentList.innerHTML = `
+          <div class="alert-incident-list-empty">
+            ${emptyLabel}
+          </div>
+        `;
+        return;
+      }
+
+      alertIncidentList.innerHTML = visibleItems.map(item => `
+        <button
+          class="alert-incident-item ${
+            item.incident_id === alertAnalysisState.selectedIncidentId
+              ? "active"
+              : ""
+          }"
+          data-alert-incident-id="${escapeHtml(item.incident_id)}"
+          type="button"
+        >
+          <span class="alert-incident-summary">
+            <span
+              class="alert-incident-name"
+              title="${escapeHtml(item.alert_name || "未命名告警")}"
+            >
+              ${escapeHtml(item.alert_name || "未命名告警")}
+            </span>
+            <span class="alert-incident-state ${escapeHtml(item.status || "resolved")}">
+              ${alertIncidentStatusLabel(item.status)}
+            </span>
+          </span>
+        </button>
+      `).join("");
+
+      alertIncidentList.querySelectorAll("[data-alert-incident-id]").forEach(button => {
+        button.addEventListener("click", async () => {
+          const incidentId = button.dataset.alertIncidentId;
+          const incident = alertAnalysisState.items.find(
+            item => item.incident_id === incidentId
+          );
+          if (!incident) return;
+
+          alertAnalysisState.selectedIncidentId = incidentId;
+          alertAnalysisState.analysisId = "";
+          alertAnalysisState.lastSequence = 0;
+          alertAnalysisState.events = [];
+          setSelectedAlertHeader(incident);
+          renderAlertIncidentList();
+          updateAnalysisStatus("pending");
+          renderAllAnalysisEvents();
+          await loadIncidentAnalysis(incidentId);
+        });
+      });
+    }
+
+    function updateAnalysisStatus(status) {
+      const labels = {
+        pending: "等待分析",
+        running: "分析中",
+        waiting_recheck: "等待复查",
+        waiting_approval: "等待审批",
+        monitoring: "持续观察",
+        completed: "已完成",
+        failed: "分析失败",
+        cancelled: "已取消"
+      };
+
+      alertAnalysisState.status = status || "";
+      alertAnalysisStatus.textContent = labels[status] || status || "未知";
+      alertAnalysisStatus.className = `alert-analysis-status ${status || ""}`;
+    }
+
+    function isVisibleAnalysisEvent(event) {
+      return event?.event_type !== "tool_call";
+    }
+
+    function createAnalysisEventElement(event) {
+      const article = document.createElement("article");
+      const eventType = event.event_type || "";
+      article.className = `alert-analysis-event ${escapeHtml(eventType)}`;
+      article.dataset.sequence = String(event.sequence_no || "");
+
+      article.innerHTML = `
+        <div class="alert-analysis-time">${formatAnalysisEventTime(event.created_at)}</div>
+        <div class="alert-analysis-event-title">
+          ${escapeHtml(event.title || analysisEventLabel(eventType))}
+        </div>
+        <div class="alert-analysis-content">${renderMarkdown(event.content_md || "")}</div>
+      `;
+
+      const action = event?.evidence?.action;
+      const actionId = String(event?.evidence?.action_id || action?.action_id || "");
+      const alreadyDecided = alertAnalysisState.events.some(item => {
+        return item?.event_type === "approval_result"
+          && String(item?.evidence?.action_id || "") === actionId;
+      });
+      if (
+        eventType === "approval_requested"
+        && actionId
+        && event?.evidence?.status === "pending_approval"
+        && !alreadyDecided
+      ) {
+        const isScale = action?.action_type === "scale_deployment";
+        const actions = document.createElement("div");
+        actions.className = "alert-approval-actions";
+        actions.innerHTML = `
+          <button class="alert-approval-button approve" type="button">${isScale ? "批准扩容" : "批准回滚"}</button>
+          <button class="alert-approval-button reject" type="button">拒绝</button>
+        `;
+        const approveButton = actions.querySelector(".approve");
+        const rejectButton = actions.querySelector(".reject");
+        approveButton.addEventListener("click", () => {
+          const target = `${action?.namespace || "--"}/${action?.target_name || "--"}`;
+          const confirmation = isScale
+            ? `确认将 ${target} 从 ${action?.current_replicas ?? "--"} 个副本扩到 ${action?.target_replicas ?? "--"} 个副本？`
+            : `确认将 ${target} 回滚到 ${action?.target_image || "--"}？`;
+          if (!window.confirm(confirmation)) return;
+          decideRemediation(actionId, "approve", [approveButton, rejectButton]);
+        });
+        rejectButton.addEventListener("click", () => {
+          decideRemediation(actionId, "reject", [approveButton, rejectButton]);
+        });
+        article.appendChild(actions);
+      }
+      return article;
+    }
+
+    async function decideRemediation(actionId, decision, buttons = []) {
+      buttons.forEach(button => { button.disabled = true; });
+      try {
+        await postJson(
+          `/api/remediations/${encodeURIComponent(actionId)}/${decision}`,
+          { decided_by: "web-sre", comment: "" }
+        );
+        if (alertAnalysisState.selectedIncidentId) {
+          await loadIncidentAnalysis(alertAnalysisState.selectedIncidentId);
+        }
+      } catch (error) {
+        window.alert(`审批操作失败：${error.message || error}`);
+        buttons.forEach(button => { button.disabled = false; });
+      }
+    }
+
+    function renderAllAnalysisEvents() {
+      alertAnalysisStream.innerHTML = "";
+
+      const visibleEvents = alertAnalysisState.events.filter(isVisibleAnalysisEvent);
+      if (!visibleEvents.length) {
+        alertAnalysisStream.innerHTML = `
+          <div class="alert-analysis-empty">
+            已收到告警，正在等待第一轮分析……
+          </div>
+        `;
+        return;
+      }
+
+      visibleEvents.forEach(event => {
+        alertAnalysisStream.appendChild(createAnalysisEventElement(event));
+      });
+      alertAnalysisStream.scrollTop = alertAnalysisStream.scrollHeight;
+    }
+
+    function setSelectedAlertHeader(incident) {
+      if (!incident) return;
+      alertAnalysisSubtitle.textContent = [
+        incident.namespace || "--",
+        incident.target || "--",
+        `开始于 ${formatIncidentTime(incident.started_at, true)}`
+      ].join(" · ");
+    }
+
+    async function loadIncidentAnalysis(incidentId) {
+      if (!incidentId) return;
+      alertAnalysisState.selectedIncidentId = incidentId;
+
+      try {
+        const safeId = encodeURIComponent(incidentId);
+        const payload = await loadJson(`/api/incidents/${safeId}/analysis`);
+
+        if (alertAnalysisState.selectedIncidentId !== incidentId) return;
+        if (!payload.analysis) {
+          alertAnalysisState.analysisId = "";
+          alertAnalysisState.status = "pending";
+          alertAnalysisState.lastSequence = 0;
+          alertAnalysisState.events = [];
+          updateAnalysisStatus("pending");
+          renderAllAnalysisEvents();
+          return;
+        }
+
+        alertAnalysisState.analysisId = payload.analysis.analysis_id;
+        alertAnalysisState.events = Array.isArray(payload.events)
+          ? payload.events
+          : [];
+        const lastEvent = alertAnalysisState.events[
+          alertAnalysisState.events.length - 1
+        ];
+        alertAnalysisState.lastSequence = Number(lastEvent?.sequence_no || 0);
+        updateAnalysisStatus(payload.analysis.status);
+        renderAllAnalysisEvents();
+      } catch (err) {
+        if (alertAnalysisState.selectedIncidentId !== incidentId) return;
+        alertAnalysisStream.innerHTML = `
+          <div class="alert-analysis-empty">
+            分析过程加载失败：${escapeHtml(err.message)}
+          </div>
+        `;
+      }
+    }
+
+    async function pollAnalysisEvents() {
+      const terminalStatuses = new Set([
+        "completed",
+        "cancelled"
+      ]);
+      const now = Date.now();
+      if (
+        ["monitoring", "failed"].includes(alertAnalysisState.status)
+        && now - alertAnalysisState.lastMonitoringPollAt < 10000
+      ) {
+        return;
+      }
+      if (
+        alertAnalysisState.eventPollRunning
+        || !alertAnalysisState.analysisId
+        || terminalStatuses.has(alertAnalysisState.status)
+      ) {
+        return;
+      }
+
+      alertAnalysisState.eventPollRunning = true;
+      if (["monitoring", "failed"].includes(alertAnalysisState.status)) {
+        alertAnalysisState.lastMonitoringPollAt = now;
+      }
+      const expectedAnalysisId = alertAnalysisState.analysisId;
+
+      try {
+        const safeId = encodeURIComponent(expectedAnalysisId);
+        const query = new URLSearchParams({
+          after_sequence: String(alertAnalysisState.lastSequence),
+          limit: "100"
+        });
+        const payload = await loadJson(
+          `/api/incident-analyses/${safeId}/events?${query}`
+        );
+
+        if (alertAnalysisState.analysisId !== expectedAnalysisId) return;
+        const newEvents = Array.isArray(payload.events) ? payload.events : [];
+        const knownSequences = new Set(
+          alertAnalysisState.events.map(event => Number(event.sequence_no || 0))
+        );
+        const unseenEvents = newEvents.filter(
+          event => !knownSequences.has(Number(event.sequence_no || 0))
+        );
+
+        unseenEvents.forEach(event => {
+          alertAnalysisState.events.push(event);
+          if (!isVisibleAnalysisEvent(event)) return;
+          const empty = alertAnalysisStream.querySelector(".alert-analysis-empty");
+          if (empty) empty.remove();
+          alertAnalysisStream.appendChild(createAnalysisEventElement(event));
+        });
+
+        if (unseenEvents.length) {
+          alertAnalysisStream.scrollTop = alertAnalysisStream.scrollHeight;
+        }
+        alertAnalysisState.lastSequence = Number(
+          payload.last_sequence || alertAnalysisState.lastSequence
+        );
+        updateAnalysisStatus(payload.status);
+      } catch (err) {
+        console.error("poll analysis events failed", err);
+      } finally {
+        alertAnalysisState.eventPollRunning = false;
+      }
+    }
+
+    function enterNewIncident(incident) {
+      if (!incident?.incident_id) return;
+      alertAnalysisState.incidentFilter = "firing";
+      alertAnalysisState.selectedIncidentId = incident.incident_id;
+      alertAnalysisState.analysisId = "";
+      alertAnalysisState.lastSequence = 0;
+      alertAnalysisState.lastMonitoringPollAt = 0;
+      alertAnalysisState.events = [];
+      setSelectedAlertHeader(incident);
+      renderAlertIncidentList();
+      updateAnalysisStatus("pending");
+      renderAllAnalysisEvents();
+
+      alertModeBtn.classList.add("alert-arrived");
+      alertModeBtn.title = "收到新告警，5 秒后进入告警分析";
+      clearTimeout(alertAnalysisState.autoSwitchTimer);
+      alertAnalysisState.autoSwitchTimer = setTimeout(async () => {
+        alertModeBtn.classList.remove("alert-arrived");
+        alertModeBtn.title = "查看告警分析";
+        setWorkspaceMode("alert");
+        await loadIncidentAnalysis(incident.incident_id);
+      }, 5000);
+    }
+
+    async function pollFiringIncidents() {
+      if (alertAnalysisState.incidentPollRunning) return;
+      alertAnalysisState.incidentPollRunning = true;
+
+      try {
+        const payload = await loadJson("/api/incidents?limit=50");
+        const incidents = Array.isArray(payload.incidents)
+          ? payload.incidents.slice()
+          : [];
+        incidents.sort((left, right) => {
+          return new Date(right.started_at || 0) - new Date(left.started_at || 0);
+        });
+        alertAnalysisState.items = incidents;
+        renderAlertIncidentList();
+
+        const firingIncidents = incidents.filter(
+          item => item.status === "firing"
+        );
+
+        const newIncidents = firingIncidents.filter(
+          item => !alertAnalysisState.knownFiringIds.has(item.incident_id)
+        );
+        alertAnalysisState.knownFiringIds = new Set(
+          firingIncidents.map(item => item.incident_id)
+        );
+
+        if (!alertAnalysisState.initialized) {
+          alertAnalysisState.initialized = true;
+          if (firingIncidents.length) enterNewIncident(firingIncidents[0]);
+          return;
+        }
+
+        if (newIncidents.length) {
+          enterNewIncident(newIncidents[0]);
+          return;
+        }
+
+        const selected = firingIncidents.find(
+          item => item.incident_id === alertAnalysisState.selectedIncidentId
+        );
+        if (selected && !alertAnalysisState.analysisId) {
+          setSelectedAlertHeader(selected);
+          await loadIncidentAnalysis(selected.incident_id);
+        }
+      } catch (err) {
+        console.error("poll firing incidents failed", err);
+      } finally {
+        alertAnalysisState.incidentPollRunning = false;
+      }
+    }
+
+    function formatIncidentTime(value, withSeconds = false) {
+      if (!value) return "--";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "--";
+
+      return new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: withSeconds ? "2-digit" : undefined,
+        hour12: false
+      }).format(date);
+    }
+
+    function incidentStatusLabel(status) {
+      return status === "firing" ? "Firing" : "Resolved";
+    }
+
+    function incidentEventLabel(eventType) {
+      const labels = {
+        incident_created: "Incident 建立",
+        firing_notification: "收到 Firing 通知",
+        resolved_notification: "收到恢复通知"
+      };
+      return labels[eventType] || eventType || "生命周期事件";
+    }
+
+    function renderIncidentList() {
+      incidentListSummary.textContent = incidentState.loading
+        ? "正在加载..."
+        : `${incidentState.items.length} 条 Incident`;
+
+      if (incidentState.loading) {
+        incidentList.innerHTML = `<div class="incident-empty">正在读取 Incident 档案...</div>`;
+        return;
+      }
+
+      if (!incidentState.items.length) {
+        incidentList.innerHTML = `
+          <div class="incident-empty">
+            当前筛选条件下没有 Incident。
+          </div>
+        `;
+        return;
+      }
+
+      incidentList.innerHTML = incidentState.items.map(item => `
+        <button
+          class="incident-list-item ${item.incident_id === incidentState.selectedId ? "active" : ""}"
+          data-incident-id="${escapeHtml(item.incident_id)}"
+          type="button"
+        >
+          <div class="incident-list-title-row">
+            <span class="incident-list-title">${escapeHtml(item.alert_name || "未命名告警")}</span>
+            <span class="incident-status ${escapeHtml(item.status)}">${incidentStatusLabel(item.status)}</span>
+          </div>
+          <div class="incident-list-target">
+            ${escapeHtml(item.namespace || "--")} / ${escapeHtml(item.target || "--")}
+          </div>
+          <div class="incident-list-meta">
+            <span>${formatIncidentTime(item.started_at)}</span>
+            <span>通知 ${Number(item.notification_count || 0)} 次</span>
+          </div>
+        </button>
+      `).join("");
+
+      incidentList.querySelectorAll("[data-incident-id]").forEach(button => {
+        button.addEventListener("click", () => {
+          selectIncident(button.dataset.incidentId);
+        });
+      });
+    }
+
+    function renderIncidentTags(values) {
+      const entries = Object.entries(values || {});
+      if (!entries.length) {
+        return `<span class="incident-tag">暂无标签</span>`;
+      }
+      return entries.map(([key, value]) => `
+        <span class="incident-tag">${escapeHtml(key)}=${escapeHtml(value)}</span>
+      `).join("");
+    }
+
+    function renderIncidentDetail(detailPayload, eventsPayload) {
+      const item = detailPayload.incident;
+      const events = eventsPayload.events || [];
+      const summary = item.annotations?.summary || "当前 Incident 没有摘要。";
+      const occurrenceCount = Number(
+        detailPayload.historical_occurrence_count || 0
+      );
+
+      incidentDetail.innerHTML = `
+        <section class="incident-detail-hero">
+          <div class="incident-detail-title-row">
+            <div>
+              <h2 class="incident-detail-title">${escapeHtml(item.alert_name)}</h2>
+              <div class="incident-detail-subtitle">
+                ${escapeHtml(item.namespace || "--")} / ${escapeHtml(item.target || "--")}
+                · Incident #${escapeHtml(item.occurrence_index || 1)}
+              </div>
+            </div>
+            <span class="incident-status ${escapeHtml(item.status)}">${incidentStatusLabel(item.status)}</span>
+          </div>
+
+          <div class="incident-facts">
+            <div class="incident-fact">
+              <div class="incident-fact-label">开始时间（北京时间）</div>
+              <div class="incident-fact-value">${formatIncidentTime(item.started_at, true)}</div>
+            </div>
+            <div class="incident-fact">
+              <div class="incident-fact-label">恢复时间（北京时间）</div>
+              <div class="incident-fact-value">${formatIncidentTime(item.resolved_at, true)}</div>
+            </div>
+            <div class="incident-fact">
+              <div class="incident-fact-label">本次通知</div>
+              <div class="incident-fact-value">${Number(item.notification_count || 0)} 次</div>
+            </div>
+            <div class="incident-fact">
+              <div class="incident-fact-label">历史独立发生</div>
+              <div class="incident-fact-value">${occurrenceCount} 次</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="incident-section">
+          <div class="incident-section-heading">
+            <h3>告警事实</h3>
+            <span>${escapeHtml(item.severity || "unknown")}</span>
+          </div>
+          <p class="incident-summary-text">${escapeHtml(summary)}</p>
+          <div class="incident-tag-list">${renderIncidentTags(item.labels)}</div>
+        </section>
+
+        <section class="incident-section">
+          <div class="incident-section-heading">
+            <h3>生命周期</h3>
+            <span>${events.length} 个事件</span>
+          </div>
+          <div class="incident-timeline">
+            ${events.length ? events.map(event => `
+              <div class="incident-event ${escapeHtml(event.event_type)}">
+                <div class="incident-event-title">${escapeHtml(incidentEventLabel(event.event_type))}</div>
+                <div class="incident-event-time">
+                  ${formatIncidentTime(event.received_at, true)} · Alert 状态 ${escapeHtml(event.alert_status || "--")}
+                </div>
+                ${event.annotations?.summary ? `
+                  <div class="incident-event-summary">${escapeHtml(event.annotations.summary)}</div>
+                ` : ""}
+              </div>
+            `).join("") : `<div class="incident-empty">暂无生命周期事件。</div>`}
+          </div>
+        </section>
+
+        <section class="incident-section">
+          <div class="incident-section-heading">
+            <h3>记录标识</h3>
+            <span>用于去重与追溯</span>
+          </div>
+          <div class="incident-tag-list">
+            <span class="incident-tag">incident_id=${escapeHtml(item.incident_id)}</span>
+            <span class="incident-tag">fingerprint=${escapeHtml(item.fingerprint)}</span>
+            <span class="incident-tag">resolved_by=${escapeHtml(item.resolved_at_source || "--")}</span>
+          </div>
+        </section>
+      `;
+    }
+
+    async function selectIncident(incidentId) {
+      if (!incidentId) return;
+      incidentState.selectedId = incidentId;
+      renderIncidentList();
+      incidentDetail.innerHTML = `<div class="incident-empty">正在读取 Incident 详情...</div>`;
+
+      try {
+        const safeId = encodeURIComponent(incidentId);
+        const [detail, events] = await Promise.all([
+          loadJson(`/api/incidents/${safeId}`),
+          loadJson(`/api/incidents/${safeId}/events?limit=500`)
+        ]);
+        if (incidentState.selectedId !== incidentId) return;
+        renderIncidentDetail(detail, events);
+      } catch (err) {
+        if (incidentState.selectedId !== incidentId) return;
+        incidentDetail.innerHTML = `
+          <div class="incident-empty incident-empty-detail">
+            <strong>Incident 详情加载失败</strong>
+            <span>${escapeHtml(err.message)}</span>
+          </div>
+        `;
+      }
+    }
+
+    async function loadIncidents(preferredId = "") {
+      incidentState.loading = true;
+      renderIncidentList();
+
+      try {
+        const query = new URLSearchParams({ limit: "100" });
+        if (incidentState.filter !== "all") {
+          query.set("status", incidentState.filter);
+        }
+        const result = await loadJson(`/api/incidents?${query}`);
+        incidentState.items = Array.isArray(result.incidents)
+          ? result.incidents
+          : [];
+        incidentState.loading = false;
+
+        const selectedStillVisible = incidentState.items.some(
+          item => item.incident_id === incidentState.selectedId
+        );
+        const nextId = preferredId
+          || (selectedStillVisible ? incidentState.selectedId : "")
+          || incidentState.items[0]?.incident_id
+          || "";
+
+        incidentState.selectedId = nextId;
+        renderIncidentList();
+        if (nextId) {
+          await selectIncident(nextId);
+        } else {
+          incidentDetail.innerHTML = `
+            <div class="incident-empty incident-empty-detail">
+              <strong>没有可显示的 Incident</strong>
+              <span>真实告警进入 Alertmanager 后会出现在这里。</span>
+            </div>
+          `;
+        }
+      } catch (err) {
+        incidentState.loading = false;
+        incidentState.items = [];
+        incidentListSummary.textContent = "加载失败";
+        incidentList.innerHTML = `
+          <div class="incident-empty">Incident 列表加载失败：${escapeHtml(err.message)}</div>
+        `;
+      }
+    }
+
+    function openIncidentDrawer() {
+      incidentDrawer.classList.add("show");
+      incidentDrawer.setAttribute("aria-hidden", "false");
+      loadIncidents();
+    }
+
+    function closeIncidentDrawer() {
+      incidentDrawer.classList.remove("show");
+      incidentDrawer.setAttribute("aria-hidden", "true");
+    }
+
+    function formatSessionTime(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toLocaleString("zh-CN", {
+        hour12: false,
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function traceSessionTime(value) {
+      if (!value) {
+        return new Date().toLocaleTimeString("zh-CN", { hour12: false });
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "--";
+      return date.toLocaleTimeString("zh-CN", { hour12: false });
+    }
+
+    function traceSessionsFromMessages(messages = []) {
+      if (!Array.isArray(messages)) return [];
+      return messages
+        .filter(message => (
+          message?.role === "assistant" &&
+          message?.metadata &&
+          Object.prototype.hasOwnProperty.call(message.metadata, "tool_traces") &&
+          Array.isArray(message.metadata.tool_traces)
+        ))
+        .map(message => ({
+          messageId: message.message_id ?? null,
+          time: traceSessionTime(message.created_at),
+          traces: message.metadata.tool_traces
+        }))
+        .reverse()
+        .slice(0, MAX_TRACE_SESSIONS);
+    }
+
+    function resetChatWorkspace(messages = []) {
+      chatBody.innerHTML = "";
+      chatHistory.length = 0;
+      traceSessions = traceSessionsFromMessages(messages);
+      renderTraceSessions();
+
+      if (!messages.length) {
+        chatBody.innerHTML = `
+          <div class="bubble agent">
+            你好！这是一个新的会话，你可以直接描述要查询的问题。
+          </div>
+        `;
+        return;
+      }
+
+      messages.forEach(message => {
+        if (!message?.content) return;
+        bubble(
+          message.content,
+          message.role === "user" ? "user" : "agent"
+        );
+      });
+    }
+
+    function activateChatSession(sessionId, messages = []) {
+      chatSessionId = sessionId;
+      sessionStorage.setItem("aiops_chat_session_id", sessionId);
+      resetChatWorkspace(messages);
+    }
+
+    async function loadChatSession(sessionId) {
+      const result = await loadJson(
+        `/api/chat/sessions/${encodeURIComponent(sessionId)}`
+      );
+
+      activateChatSession(
+        result.session.session_id,
+        result.messages || []
+      );
+
+      loadChatSessions().catch(err => {
+        console.error("refresh chat sessions failed", err);
+      });
+    }
+
+    async function deleteChatSession(sessionId, title) {
+      const displayTitle = title || "未命名会话";
+      const confirmed = window.confirm(
+        `确定删除会话“${displayTitle}”吗？`
+      );
+
+      if (!confirmed) return;
+
+      await loadJson(
+        `/api/chat/sessions/${encodeURIComponent(sessionId)}`,
+        { method: "DELETE" }
+      );
+
+      if (sessionId === chatSessionId) {
+        sessionStorage.removeItem("aiops_chat_session_id");
+        chatSessionId = getOrCreateChatSessionId();
+        resetChatWorkspace([]);
+      }
+
+      await loadChatSessions();
+      alert(`会话“${displayTitle}”已删除。`);
+    }
+
+    function renderChatSessions(sessions) {
+      chatSessionList.innerHTML = "";
+
+      if (!Array.isArray(sessions) || sessions.length === 0) {
+        return;
+      }
+
+      sessions.forEach(session => {
+        const item = document.createElement("div");
+        item.className = "chat-session-item";
+
+        if (session.session_id === chatSessionId) {
+          item.classList.add("active");
+        }
+
+        const openButton = document.createElement("button");
+        openButton.type = "button";
+        openButton.className = "chat-session-open";
+        openButton.innerHTML = `
+          <span class="chat-session-title">
+            ${escapeHtml(session.title || "未命名会话")}
+          </span>
+        `;
+
+        openButton.addEventListener("click", async () => {
+          try {
+            await loadChatSession(session.session_id);
+          } catch (err) {
+            alert(`加载会话失败：${err.message}`);
+          }
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "chat-session-delete";
+        deleteButton.title = "删除会话";
+        deleteButton.setAttribute(
+          "aria-label",
+          `删除会话 ${session.title || "新对话"}`
+        );
+        deleteButton.textContent = "×";
+
+        deleteButton.addEventListener("click", async () => {
+          deleteButton.disabled = true;
+
+          try {
+            await deleteChatSession(
+              session.session_id,
+              session.title
+            );
+          } catch (err) {
+            alert(`删除会话失败：${err.message}`);
+            deleteButton.disabled = false;
+          }
+        });
+
+        item.append(openButton, deleteButton);
+        chatSessionList.appendChild(item);
+      });
+    }
+
+    async function loadChatSessions() {
+      const result = await loadJson("/api/chat/sessions?limit=50");
+      renderChatSessions(result.sessions || []);
+    }
+
+    async function createNewChatSession() {
+      const inputTitle = window.prompt(
+        "请输入新会话名称：",
+        ""
+      );
+
+      if (inputTitle === null) return;
+
+      const title = inputTitle.trim();
+
+      if (!title) {
+        alert("会话名称不能为空。");
+        return;
+      }
+
+      newChatBtn.disabled = true;
+
+      try {
+        const result = await postJson("/api/chat/sessions", {
+          title
+        });
+
+        activateChatSession(
+          result.session.session_id,
+          []
+        );
+
+        await loadChatSessions();
+        chatInput.focus();
+      } catch (err) {
+        alert(`创建会话失败：${err.message}`);
+      } finally {
+        newChatBtn.disabled = false;
+      }
+    }
+
+    async function restoreCurrentChatSession() {
+      if (!chatSessionId) return;
+
+      try {
+        const result = await loadJson(
+          `/api/chat/sessions/${encodeURIComponent(chatSessionId)}`
+        );
+
+        activateChatSession(
+          result.session.session_id,
+          result.messages || []
+        );
+      } catch (err) {
+        console.info("current chat session has no saved history");
+      }
+    }
+
+    async function putJson(url, payload) {
+      return loadJson(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload ?? {})
+      });
+    }
+
+    async function deleteJson(url) {
+      return loadJson(url, {
+        method: "DELETE"
+      });
+    }
+
+    function setStatusTag(el, level, text) {
+      el.classList.remove("tag-good", "tag-warn", "tag-bad");
+      if (level === "good") el.classList.add("tag-good");
+      else if (level === "warn") el.classList.add("tag-warn");
+      else el.classList.add("tag-bad");
+      el.textContent = text || "--";
+    }
+
+    function switchSidebarPanel(panelName) {
+      sidebarTabs.forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.panel === panelName);
+      });
+      Object.entries(sidebarPanels).forEach(([key, panel]) => {
+        panel.classList.toggle("active", key === panelName);
+      });
+    }
+
+    function formatPrettyJson(value) {
+      try {
+        return JSON.stringify(value ?? {}, null, 2);
+      } catch (err) {
+        return String(value ?? "");
+      }
+    }
+
+    function renderMarkdown(text) {
+      const lines = String(text ?? "").split("\n");
+      let html = "";
+      let inCode = false;
+      let inUl = false;
+      let inOl = false;
+      let tableRows = [];
+
+      function flushLists() {
+        if (inUl) {
+          html += "</ul>";
+          inUl = false;
+        }
+        if (inOl) {
+          html += "</ol>";
+          inOl = false;
+        }
+      }
+
+      function isTableSeparator(line) {
+        return /^\|?[\s:-]+\|[\s|:-]*\|?$/.test(line) && line.includes("-");
+      }
+
+      function splitTableCells(line) {
+        let body = line.trim();
+        if (body.startsWith("|")) body = body.slice(1);
+        if (body.endsWith("|")) body = body.slice(0, -1);
+        return body.split("|").map((cell) => cell.trim());
+      }
+
+      function flushTable() {
+        if (tableRows.length === 0) return;
+
+        const rows = tableRows.slice();
+        tableRows = [];
+
+        let header = rows[0];
+        let bodyRows = rows.slice(1);
+        if (bodyRows.length > 0 && isTableSeparator(bodyRows[0].join("|"))) {
+          bodyRows = bodyRows.slice(1);
+        }
+
+        html += "<table><thead><tr>";
+        header.forEach((cell) => {
+          html += `<th>${formatInline(cell)}</th>`;
+        });
+        html += "</tr></thead><tbody>";
+        bodyRows.forEach((cells) => {
+          html += "<tr>";
+          cells.forEach((cell) => {
+            html += `<td>${formatInline(cell)}</td>`;
+          });
+          html += "</tr>";
+        });
+        html += "</tbody></table>";
+      }
+
+      function formatInline(source) {
+        return escapeHtml(source)
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      }
+
+      for (const rawLine of lines) {
+        const line = rawLine.trimEnd();
+
+        if (line.startsWith("```")) {
+          flushTable();
+          flushLists();
+          if (!inCode) {
+            html += "<pre><code>";
+            inCode = true;
+          } else {
+            html += "</code></pre>";
+            inCode = false;
+          }
+          continue;
+        }
+
+        if (inCode) {
+          html += escapeHtml(rawLine) + "\n";
+          continue;
+        }
+
+        const trimmed = rawLine.trim();
+        if (!trimmed) {
+          flushTable();
+          flushLists();
+          continue;
+        }
+
+        if (trimmed.includes("|") && (trimmed.startsWith("|") || /\|.+\|/.test(trimmed))) {
+          if (isTableSeparator(trimmed) && tableRows.length === 0) {
+            flushLists();
+            html += `<p>${formatInline(trimmed)}</p>`;
+            continue;
+          }
+          flushLists();
+          tableRows.push(splitTableCells(trimmed));
+          continue;
+        }
+
+        if (tableRows.length > 0) {
+          flushTable();
+        }
+
+        if (trimmed.startsWith("### ")) {
+          flushLists();
+          html += `<h3>${formatInline(trimmed.slice(4))}</h3>`;
+          continue;
+        }
+
+        if (trimmed.startsWith("## ")) {
+          flushLists();
+          html += `<h2>${formatInline(trimmed.slice(3))}</h2>`;
+          continue;
+        }
+
+        if (trimmed.startsWith("# ")) {
+          flushLists();
+          html += `<h1>${formatInline(trimmed.slice(2))}</h1>`;
+          continue;
+        }
+
+        if (/^\d+\.\s+/.test(trimmed)) {
+          if (!inOl) {
+            flushLists();
+            html += "<ol>";
+            inOl = true;
+          }
+          html += `<li>${formatInline(trimmed.replace(/^\d+\.\s+/, ""))}</li>`;
+          continue;
+        }
+
+        if (trimmed.startsWith("- ")) {
+          if (!inUl) {
+            flushLists();
+            html += "<ul>";
+            inUl = true;
+          }
+          html += `<li>${formatInline(trimmed.slice(2))}</li>`;
+          continue;
+        }
+
+        flushLists();
+        html += `<p>${formatInline(trimmed)}</p>`;
+      }
+
+      flushTable();
+      flushLists();
+
+      if (inCode) {
+        html += "</code></pre>";
+      }
+
+      return html || "<p></p>";
+    }
+
+    function bubble(text, role = "agent") {
+      const div = document.createElement("div");
+      div.className = `bubble ${role}`;
+      if (role === "agent") {
+        div.innerHTML = renderMarkdown(text);
+      } else {
+        div.textContent = text;
+      }
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+
+      chatHistory.push({
+        role: role === "user" ? "user" : "assistant",
+        content: text
+      });
+
+      if (chatHistory.length > 12) {
+        chatHistory.splice(0, chatHistory.length - 12);
+      }
+    }
+
+    const TOOL_LABELS = {
+      get_business_overview: "业务总览",
+      get_metric_value: "指标查询",
+      get_metric_trend: "指标趋势",
+      compare_metric_time_shift: "时序对比",
+      get_topk_resource_consumers: "资源 TopK",
+      get_service_golden_signals: "黄金指标",
+      get_infrastructure_saturation: "资源饱和度",
+      get_cluster_topology_summary: "拓扑摘要",
+      get_cluster_topology: "完整拓扑",
+      search_change_events: "变更检索",
+      get_alerts: "告警列表",
+      get_alert_detail: "告警详情",
+      search_logs: "日志检索",
+      search_knowledge_base: "知识库检索"
+    };
+
+    function resolveToolLabel(trace) {
+      const toolName = trace.tool_name || trace.name || "";
+      return trace.tool_label || TOOL_LABELS[toolName] || "";
+    }
+
+    function renderTraceSessions() {
+      traceList.innerHTML = "";
+
+      if (!Array.isArray(traceSessions) || traceSessions.length === 0) {
+        traceList.innerHTML = `<div class="empty">当前还没有工具调用记录。</div>`;
+        return;
+      }
+
+      traceSessions.forEach((session, sessionIndex) => {
+        const sessionBox = document.createElement("div");
+        sessionBox.className = "trace-session";
+
+        const traceCount = Array.isArray(session.traces) ? session.traces.length : 0;
+
+        sessionBox.innerHTML = `
+          <div class="trace-session-header">
+            <div class="trace-session-meta">${escapeHtml(session.time || "--")} · ${traceCount} 次工具调用</div>
+          </div>
+        `;
+
+        const traces = Array.isArray(session.traces) ? session.traces : [];
+
+        if (traces.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "这一轮没有工具调用记录。";
+          sessionBox.appendChild(empty);
+          traceList.appendChild(sessionBox);
+          return;
+        }
+
+        traces.forEach((trace, traceIndex) => {
+          const row = document.createElement("div");
+          row.className = "trace-row";
+
+          const toolName = trace.tool_name || trace.name || "unknown_tool";
+          const toolLabel = resolveToolLabel(trace);
+          const displayName = toolLabel || toolName;
+          const status = (trace.status || "success").toLowerCase();
+          const timestamp = trace.timestamp || "--:--:--";
+          const duration = Number.isFinite(Number(trace.duration_ms)) ? `${trace.duration_ms}ms` : "--";
+          const queryUsed = trace.query_used || "";
+          const summary = trace.summary || "";
+
+          row.innerHTML = `
+            <div class="trace-summary" title="${escapeHtml(toolName)}">
+              <div class="trace-toggle">▶</div>
+              <div class="trace-time">[${escapeHtml(timestamp)}]</div>
+              <div class="trace-name">
+                <div class="trace-name-main">${escapeHtml(displayName)}</div>
+              </div>
+              <div class="trace-duration">${escapeHtml(duration)}</div>
+              <div class="trace-status ${status === "failed" ? "failed" : "success"}">[${escapeHtml(status.toUpperCase())}]</div>
+            </div>
+            <div class="trace-detail">
+              <div class="trace-name-en-full">tool: ${escapeHtml(toolName)}</div>
+              <pre class="trace-code">${escapeHtml(formatPrettyJson(trace.arguments || {}))}</pre>
+              ${
+                queryUsed
+                  ? `
+                    <div class="trace-block-title">Query Used</div>
+                    <pre class="trace-query">${escapeHtml(String(queryUsed))}</pre>
+                  `
+                  : ""
+              }
+              ${
+                summary
+                  ? `<div class="trace-meta">summary: ${escapeHtml(summary)}</div>`
+                  : ""
+              }
+              ${
+                trace.tool_call_id
+                  ? `<div class="trace-meta">tool_call_id: ${escapeHtml(trace.tool_call_id)}</div>`
+                  : ""
+              }
+            </div>
+          `;
+
+          const summaryEl = row.querySelector(".trace-summary");
+          summaryEl.addEventListener("click", () => {
+            row.classList.toggle("open");
+            row.querySelector(".trace-toggle").textContent = row.classList.contains("open") ? "▼" : "▶";
+          });
+
+          if (sessionIndex === 0 && traceIndex === 0) {
+            row.classList.add("open");
+            row.querySelector(".trace-toggle").textContent = "▼";
+          }
+
+          sessionBox.appendChild(row);
+        });
+
+        traceList.appendChild(sessionBox);
+      });
+    }
+
+    function addTraceSession(traces) {
+      const normalizedTraces = Array.isArray(traces) ? traces : [];
+      traceSessions.unshift({
+        time: new Date().toLocaleTimeString("zh-CN", { hour12: false }),
+        traces: normalizedTraces
+      });
+
+      if (traceSessions.length > MAX_TRACE_SESSIONS) {
+        traceSessions = traceSessions.slice(0, MAX_TRACE_SESSIONS);
+      }
+
+      renderTraceSessions();
+    }
+
+    function renderChangeTimeline(items) {
+      if (!Array.isArray(items) || items.length === 0) {
+        changeTimeline.innerHTML = `<div class="empty">暂无变更记录。</div>`;
+        return;
+      }
+
+      const sortedEvents = [...items].sort((a, b) => {
+        const ta = new Date(String(a.event_time || "").replace(" ", "T")).getTime();
+        const tb = new Date(String(b.event_time || "").replace(" ", "T")).getTime();
+        const na = Number.isFinite(ta) ? ta : 0;
+        const nb = Number.isFinite(tb) ? tb : 0;
+        return nb - na;
+      });
+
+      changeTimeline.innerHTML = sortedEvents.slice(0, 30).map(item => `
+        <div class="timeline-item">
+          <div class="timeline-time">${escapeHtml(item.event_time || "--")}</div>
+          <div class="timeline-summary">${escapeHtml(item.summary || "")}</div>
+        </div>
+      `).join("");
+    }
+
+    function setMetricTone(el, level) {
+      if (!el) return;
+      el.classList.remove("is-good", "is-warn", "is-bad");
+      if (level === "good") el.classList.add("is-good");
+      if (level === "warn") el.classList.add("is-warn");
+      if (level === "bad") el.classList.add("is-bad");
+    }
+
+    function renderServiceLevels(serviceLevel = {}) {
+      const sliEl = document.getElementById("metric-sli");
+      const slaEl = document.getElementById("metric-sla");
+      const budgetEl = document.getElementById("metric-error-budget");
+      const shortSliEl = document.getElementById("metric-sli-5m");
+      const burnRateEl = document.getElementById("metric-burn-rate");
+
+      sliEl.textContent = serviceLevel.sli_text || "NoData";
+      slaEl.textContent = serviceLevel.slo_target_text || "99.90%";
+      budgetEl.textContent = serviceLevel.error_budget_text || "NoData";
+      shortSliEl.textContent = serviceLevel.sli_5m_text || "NoData";
+      burnRateEl.textContent = serviceLevel.burn_rate_5m_text || "NoData";
+      setMetricTone(sliEl, serviceLevel.sli_level || "warn");
+      setMetricTone(budgetEl, serviceLevel.error_budget_level || "warn");
+      setMetricTone(shortSliEl, serviceLevel.sli_5m_level || "warn");
+      setMetricTone(burnRateEl, serviceLevel.burn_rate_5m_level || "warn");
+
+      const shortEffective = Number(serviceLevel.sli_5m_effective_requests);
+      const shortFailed = Number(serviceLevel.sli_5m_failed_requests);
+      if ([shortEffective, shortFailed].every(Number.isFinite)) {
+        const shortDetail = `最近5分钟技术SLI有效请求 ${shortEffective.toFixed(2)}，技术失败 ${shortFailed.toFixed(2)}`;
+        shortSliEl.title = shortDetail;
+        burnRateEl.title = shortDetail;
+      }
+
+      const effectiveRequests = Number(serviceLevel.effective_requests);
+      const successRequests = Number(serviceLevel.success_requests);
+      const failedRequests = Number(serviceLevel.failed_requests);
+      if ([effectiveRequests, successRequests, failedRequests].every(Number.isFinite)) {
+        const detail = `最近30天技术SLI有效请求 ${effectiveRequests.toFixed(2)}，正确处理 ${successRequests.toFixed(2)}，技术失败 ${failedRequests.toFixed(2)}`;
+        sliEl.title = detail;
+        budgetEl.title = detail;
+      }
+    }
+
+    async function loadMetrics() {
+      const data = await loadJson("/api/metrics");
+      const business = data.business_panel || data.success_rate || {};
+      const alerts = data.alert_panel || data.active_alerts || {};
+      const tokens = data.agent_tokens || {};
+
+      const successEl = document.getElementById("metric-sr");
+      successEl.textContent = business.order_result_text || "--";
+      if (business.success_rate && business.success_rate !== "--") {
+        successEl.title = `累计购买成功率 ${business.success_rate}`;
+      }
+      setMetricTone(successEl, business.success_rate_level || business.status_level);
+
+      const recentSuccessEl = document.getElementById("metric-sr-recent");
+      recentSuccessEl.textContent = business.recent_success_rate || "NoData";
+      setMetricTone(
+        recentSuccessEl,
+        business.recent_success_rate_level ||
+          (recentSuccessEl.textContent === "NoData" ? "warn" : "")
+      );
+      renderServiceLevels(data.service_level || {});
+
+      const latencyEl = document.getElementById("metric-latency");
+      latencyEl.textContent = business.latency_text || "--";
+      setMetricTone(latencyEl, business.latency_level || "");
+
+      document.getElementById("metric-orders").textContent =
+        business.order_count ?? "--";
+
+      const dashBizEl = document.getElementById("metric-dash-biz");
+      const dashNodeEl = document.getElementById("metric-dash-node");
+      dashBizEl.textContent = "业务监控";
+      dashNodeEl.textContent = "节点监控";
+      if (business.line1_url) {
+        dashBizEl.href = business.line1_url;
+      }
+      if (business.line2_url) {
+        dashNodeEl.href = business.line2_url;
+      }
+
+      const alertTotal = alerts.total ?? alerts.value ?? "--";
+      const alertEl = document.getElementById("metric-alerts");
+      alertEl.textContent = alertTotal === "--" ? "--" : `${alertTotal} 条`;
+      setMetricTone(alertEl, alerts.status_level || (String(alertTotal) === "0" ? "good" : "bad"));
+
+      const totalTokens = tokens.total ?? tokens.value ?? "--";
+      const totalTokensAll = tokens.total_all_time ?? tokens.line0 ?? totalTokens;
+      const mainTokens = tokens.main_agent ?? tokens.line1 ?? "--";
+      const vectorTokens = tokens.vector_agent ?? tokens.line2 ?? "--";
+      document.getElementById("metric-token").textContent =
+        typeof totalTokens === "number" ? `${totalTokens.toLocaleString()} tokens` : totalTokens;
+      document.getElementById("metric-token-all").textContent =
+        typeof totalTokensAll === "number" ? `${totalTokensAll.toLocaleString()} tokens` : totalTokensAll;
+      document.getElementById("metric-token-main").textContent =
+        typeof mainTokens === "number" ? `${mainTokens.toLocaleString()} tokens` : mainTokens;
+      document.getElementById("metric-token-vector").textContent =
+        typeof vectorTokens === "number" ? `${vectorTokens.toLocaleString()} tokens` : vectorTokens;
+
+      const topStatus = document.getElementById("top-status");
+      if (String(alertTotal) !== "0" && String(alertTotal) !== "--") {
+        topStatus.textContent = "△ 存在告警";
+        topStatus.style.color = "var(--orange)";
+      } else if (business.status_level === "bad") {
+        topStatus.textContent = "△ 需要关注";
+        topStatus.style.color = "var(--orange)";
+      } else {
+        topStatus.textContent = "✓ 运行平稳";
+        topStatus.style.color = "var(--green)";
+      }
+    }
+
+    async function loadChangeEvents() {
+      const data = await loadJson("/api/change-events");
+      renderChangeTimeline(Array.isArray(data) ? data : []);
+    }
+
+    function startAutoRefresh() {
+      setInterval(() => {
+        loadMetrics().catch((err) => console.error("loadMetrics failed:", err));
+      }, 10000);
+
+      setInterval(() => {
+        loadChangeEvents().catch((err) => console.error("loadChangeEvents failed:", err));
+      }, 15000);
+
+      setInterval(() => {
+        pollFiringIncidents();
+      }, 5000);
+
+      setInterval(() => {
+        pollAnalysisEvents();
+      }, 2000);
+    }
+
+    function setKnowledgeMenu(view) {
+      currentKnowledgeView = view;
+      kbMenuItems.forEach(item => {
+        item.classList.toggle("active", item.dataset.kbView === view);
+      });
+
+      const titles = {
+        sop: "SOP 列表",
+        experience: "运维经验文档",
+        review: "审核",
+        create: "添加知识"
+      };
+
+      kbListTitle.textContent = titles[view] || "知识列表";
+      kbToolbarTitle.textContent = view === "create" ? "新增知识" : "知识检索测试";
+    }
+
+    function getKnowledgeRecordsByView(view) {
+      if (view === "sop") return knowledgeState.sops || [];
+      if (view === "experience") return knowledgeState.experiences || [];
+      return [];
+    }
+
+    function renderKnowledgeList() {
+      kbNavList.innerHTML = "";
+
+      if (currentKnowledgeView === "review") {
+        kbNavList.innerHTML = `<div class="empty">文件主库模式下，审核流后续按工作流补齐。</div>`;
+        return;
+      }
+
+      if (currentKnowledgeView === "create") {
+        kbNavList.innerHTML = `<div class="empty">请在右侧填写知识内容。</div>`;
+        return;
+      }
+
+      const items = getKnowledgeRecordsByView(currentKnowledgeView);
+      if (!items.length) {
+        kbNavList.innerHTML = `<div class="empty">当前分类下暂无知识。</div>`;
+        return;
+      }
+
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "nav-item";
+        div.innerHTML = `
+          <div class="nav-item-title">${escapeHtml(item.title || item.doc_id || "未命名")}</div>
+          <div class="nav-item-meta">${escapeHtml(item.file_name || "")}</div>
+          <div class="tag-row">
+            ${(item.tags || []).slice(0, 4).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
+          </div>
+        `;
+        div.addEventListener("click", () => {
+          document.querySelectorAll(".nav-item").forEach(node => node.classList.remove("active"));
+          div.classList.add("active");
+          renderKnowledgeDetail(item);
+        });
+        kbNavList.appendChild(div);
+      });
+    }
+
+    function renderKnowledgeDetail(item) {
+      const steps = Array.isArray(item.recommended_steps) ? item.recommended_steps : [];
+      const tags = Array.isArray(item.tags) ? item.tags : [];
+      const isMarkdownExperience =
+        !!item.markdown_content &&
+        (item.type === "incident_experience" || String(item.file_name || "").endsWith(".md"));
+
+      let markdownBlock = "";
+      if (item.markdown_content) {
+        markdownBlock = `
+          <div class="content-section">
+            <div class="content-section-title">${isMarkdownExperience ? "文档内容" : "原始 Markdown"}</div>
+            <div class="content-text">${escapeHtml(item.markdown_content)}</div>
+          </div>
+        `;
+      }
+
+      kbContentScroll.innerHTML = `
+        <div class="content-card">
+          <div class="content-title">${escapeHtml(item.title || "")}</div>
+          <div class="content-meta">
+            <div>类型：${escapeHtml(item.type_label || item.type || "")}</div>
+            <div>文件：${escapeHtml(item.relative_path || item.file_name || "")}</div>
+            <div>知识 ID：${escapeHtml(item.knowledge_id || "")}</div>
+          </div>
+
+          ${!isMarkdownExperience ? `
+          <div class="content-section">
+            <div class="content-section-title">摘要 / 场景</div>
+            <div class="content-text">${escapeHtml(item.summary || item.scene || "暂无内容")}</div>
+          </div>
+
+          <div class="content-section">
+            <div class="content-section-title">系统出现什么问题</div>
+            ${
+              item.symptoms && item.symptoms.length
+                ? `<ul class="content-list">${item.symptoms.map(text => `<li>${escapeHtml(text)}</li>`).join("")}</ul>`
+                : `<div class="content-text">暂无内容</div>`
+            }
+          </div>
+
+          <div class="content-section">
+            <div class="content-section-title">关联组件 / 场景</div>
+            ${
+              item.applicable_components && item.applicable_components.length
+                ? `<div class="content-text">${escapeHtml(item.applicable_components.join(", "))}</div>`
+                : `<div class="content-text">暂无内容</div>`
+            }
+          </div>
+
+          <div class="content-section">
+            <div class="content-section-title">排查思路 / 处理步骤</div>
+            ${
+              steps.length
+                ? `<ol class="content-list">${steps.map(step => `
+                    <li>
+                      <div>${escapeHtml(step.action || "")}</div>
+                      ${step.recommended_command ? `<div class="content-text">推荐动作：${escapeHtml(step.recommended_command)}</div>` : ""}
+                      ${step.output_focus ? `<div class="content-text">关注点：${escapeHtml(step.output_focus)}</div>` : ""}
+                    </li>
+                  `).join("")}</ol>`
+                : `<div class="content-text">暂无内容</div>`
+            }
+          </div>
+
+          <div class="content-section">
+            <div class="content-section-title">可能原因 / 风险提示</div>
+            <div class="content-text">${escapeHtml(item.risk_warnings || "暂无内容")}</div>
+          </div>
+
+          <div class="content-section">
+            <div class="content-section-title">解决建议 / 经验结论</div>
+            <div class="content-text">${escapeHtml(item.rollback_advice || "暂无内容")}</div>
+          </div>
+          ` : ""}
+
+          ${markdownBlock}
+
+          ${!isMarkdownExperience ? `
+          <div class="content-section">
+            <div class="content-section-title">标签</div>
+            <div class="tag-row">
+              ${tags.length ? tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("") : '<span class="content-text">暂无标签</span>'}
+            </div>
+          </div>
+          ` : ""}
+
+          <div class="content-actions">
+            <button class="ghost-btn" id="delete-current-knowledge-btn">删除该知识</button>
+            <button class="ghost-btn" id="sync-current-knowledge-btn">同步到向量库</button>
+          </div>
+        </div>
+      `;
+      const deleteBtn = document.getElementById("delete-current-knowledge-btn");
+      deleteBtn?.addEventListener("click", async () => {
+        const confirmed = window.confirm(`确认删除知识「${item.title || item.doc_id}」吗？`);
+        if (!confirmed) return;
+
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = "删除中...";
+
+        try {
+          await authenticatedFetch(`/api/knowledge/files/${encodeURIComponent(item.doc_id)}`, {
+            method: "DELETE"
+          }).then(async res => {
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(text || `HTTP ${res.status}`);
+            }
+            return res.json();
+          });
+
+          await postJson("/api/knowledge/sync", {});
+          await loadKnowledgeFiles();
+          refreshKnowledgeView();
+          kbContentScroll.innerHTML = `<div class="empty">知识已删除，并已同步向量库。</div>`;
+        } catch (err) {
+          alert(`删除失败：${err.message}`);
+        } finally {
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = "删除该知识";
+        }
+      });
+
+      const syncBtn = document.getElementById("sync-current-knowledge-btn");
+      syncBtn?.addEventListener("click", async () => {
+        syncBtn.disabled = true;
+        syncBtn.textContent = "同步中...";
+        try {
+          const result = await postJson("/api/knowledge/sync", {});
+          alert(`同步完成：${JSON.stringify(result.result || {}, null, 2)}`);
+        } catch (err) {
+          alert(`同步失败：${err.message}`);
+        } finally {
+          syncBtn.disabled = false;
+          syncBtn.textContent = "同步到向量库";
+        }
+      });
+    }
+
+    function renderReviewPlaceholder() {
+      kbContentScroll.innerHTML = `
+        <div class="review-placeholder">
+          <p>当前知识库主线已经切换为文件主库模式：</p>
+          <p>1. SOP 存在 <code>knowledge_base/sops/*.json</code></p>
+          <p>2. 运维经验文档存在 <code>knowledge_base/experiences/*.md</code></p>
+          <p>3. 审核流后续建议独立为“候选文件目录 + 审核动作”的工作流</p>
+        </div>
+      `;
+    }
+
+    function renderCreateForm() {
+      kbContentScroll.innerHTML = `
+        <div class="content-card">
+          <div class="content-title">新增知识</div>
+          <div class="content-meta">
+            <div>在这里新增知识后，后端会直接写入文件系统。</div>
+            <div>SOP 会生成 <code>knowledge_base/sops/*.json</code>；运维经验文档会生成 <code>knowledge_base/experiences/*.md</code>。</div>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              知识类型
+              <select id="create-knowledge-type">
+                <option value="official_sop">SOP</option>
+                <option value="incident_experience">运维经验文档</option>
+                <option value="postmortem">故障复盘</option>
+              </select>
+            </label>
+
+            <label>
+              文件名
+              <input id="create-file-name" placeholder="例如：gateway_502" />
+            </label>
+
+            <label>
+              标题
+              <input id="create-title" placeholder="例如：网关 502 排查 SOP" />
+            </label>
+
+            <label>
+              摘要 / 场景
+              <textarea id="create-summary" rows="3" placeholder="一句话概括故障场景"></textarea>
+            </label>
+
+            <label>
+              故障现象
+              <textarea id="create-symptoms" rows="4" placeholder="每行一条，例如：&#10;网关返回 502&#10;上游连接超时"></textarea>
+            </label>
+
+            <label>
+              关联组件
+              <input id="create-components" placeholder="例如：biz-gateway（业务网关）, inspection-engine" />
+            </label>
+
+            <label>
+              推荐步骤
+              <textarea id="create-steps" rows="6" placeholder="每行一条，支持 action|recommended_command|output_focus 格式"></textarea>
+            </label>
+
+            <label>
+              风险提示
+              <textarea id="create-risk" rows="3" placeholder="例如：高峰期不要直接重启数据库"></textarea>
+            </label>
+
+            <label>
+              解决建议 / 回滚建议
+              <textarea id="create-rollback" rows="3" placeholder="例如：必要时优先限流，再评估是否回滚"></textarea>
+            </label>
+
+            <label>
+              标签
+              <input id="create-tags" placeholder="例如：gateway, 502, timeout" />
+            </label>
+
+            <label>
+              Markdown 正文（仅运维经验/复盘可选）
+              <textarea id="create-markdown" rows="10" placeholder="# 标题&#10;&#10;这里写经验文档 Markdown"></textarea>
+            </label>
+
+            <div class="content-actions">
+              <button class="primary-btn" id="create-knowledge-btn">创建知识文件</button>
+              <button class="ghost-btn" id="create-and-sync-btn">创建并同步向量库</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const createBtn = document.getElementById("create-knowledge-btn");
+      const createAndSyncBtn = document.getElementById("create-and-sync-btn");
+
+      async function submitKnowledge(withSync) {
+        const payload = {
+          type: document.getElementById("create-knowledge-type").value,
+          file_name: document.getElementById("create-file-name").value.trim(),
+          title: document.getElementById("create-title").value.trim(),
+          summary: document.getElementById("create-summary").value.trim(),
+          symptoms: document.getElementById("create-symptoms").value,
+          applicable_components: document.getElementById("create-components").value,
+          recommended_steps: document.getElementById("create-steps").value,
+          risk_warnings: document.getElementById("create-risk").value.trim(),
+          rollback_advice: document.getElementById("create-rollback").value.trim(),
+          tags: document.getElementById("create-tags").value,
+          markdown_content: document.getElementById("create-markdown").value
+        };
+
+        if (!payload.title) {
+          alert("请先填写标题。");
+          return;
+        }
+
+        const target = withSync ? createAndSyncBtn : createBtn;
+        target.disabled = true;
+        target.textContent = withSync ? "创建并同步中..." : "创建中...";
+
+        try {
+          const created = await postJson("/api/knowledge/files", payload);
+          if (withSync) {
+            await postJson("/api/knowledge/sync", {});
+          }
+          await loadKnowledgeFiles();
+          setKnowledgeMenu(payload.type === "official_sop" ? "sop" : "experience");
+          renderKnowledgeList();
+
+          const records = payload.type === "official_sop" ? (knowledgeState.sops || []) : (knowledgeState.experiences || []);
+          const found = records.find(item => item.doc_id === created.doc_id);
+          if (found) {
+            renderKnowledgeDetail(found);
+          } else {
+            kbContentScroll.innerHTML = `<div class="empty">创建成功：${escapeHtml(created.relative_path || created.file_name || "")}</div>`;
+          }
+          alert(withSync ? "知识创建并同步完成。" : "知识创建完成。");
+        } catch (err) {
+          alert(`创建失败：${err.message}`);
+        } finally {
+          target.disabled = false;
+          target.textContent = withSync ? "创建并同步向量库" : "创建知识文件";
+        }
+      }
+
+      createBtn.addEventListener("click", () => submitKnowledge(false));
+      createAndSyncBtn.addEventListener("click", () => submitKnowledge(true));
+    }
+
+    function renderSearchResults(result) {
+      const items = Array.isArray(result.items) ? result.items : [];
+      if (!items.length) {
+        kbContentScroll.innerHTML = `<div class="empty">没有检索到相关知识。</div>`;
+        return;
+      }
+
+      kbContentScroll.innerHTML = `
+        <div class="content-card">
+          <div class="content-title">知识检索结果</div>
+          <div class="content-meta">
+            <div>查询：${escapeHtml(result.query || "")}</div>
+            <div>命中：${items.length} 条</div>
+          </div>
+          ${items.map(item => {
+            const record = item.record || {};
+            return `
+              <div class="search-result-card">
+                <div class="search-result-score">score: ${escapeHtml(String(item.score ?? ""))}</div>
+                <div class="content-section-title">${escapeHtml(record.title || "")}</div>
+                <div class="content-text">${escapeHtml(record.summary || record.scene || "")}</div>
+                <div class="tag-row" style="margin-top:12px;">
+                  ${(record.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    async function loadKnowledgeFiles() {
+      const data = await loadJson("/api/knowledge/files");
+      knowledgeState = {
+        records: data.records || [],
+        sops: data.sops || [],
+        experiences: data.experiences || []
+      };
+    }
+
+    function refreshKnowledgeView() {
+      setKnowledgeMenu(currentKnowledgeView);
+      renderKnowledgeList();
+
+      if (currentKnowledgeView === "review") {
+        renderReviewPlaceholder();
+        return;
+      }
+      if (currentKnowledgeView === "create") {
+        renderCreateForm();
+        return;
+      }
+
+      const items = getKnowledgeRecordsByView(currentKnowledgeView);
+      if (items.length) {
+        renderKnowledgeDetail(items[0]);
+        const firstNav = kbNavList.querySelector(".nav-item");
+        firstNav?.classList.add("active");
+      } else {
+        kbContentScroll.innerHTML = `<div class="empty">当前分类下暂无知识。</div>`;
+      }
+    }
+
+    async function openKnowledgeModal() {
+      sopModal.classList.add("show");
+      try {
+        await loadKnowledgeFiles();
+        refreshKnowledgeView();
+      } catch (err) {
+        kbNavList.innerHTML = `<div class="empty">知识库加载失败：${escapeHtml(err.message)}</div>`;
+        kbContentScroll.innerHTML = `<div class="empty">知识库加载失败：${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function handleKnowledgeSearch() {
+      const query = knowledgeSearchInput.value.trim();
+      if (!query) {
+        alert("请输入要检索的故障现象。");
+        return;
+      }
+
+      knowledgeSearchBtn.disabled = true;
+      knowledgeSearchBtn.textContent = "检索中...";
+      try {
+        const result = await postJson("/api/knowledge/search", {
+          symptom_query: query,
+          top_k: 5
+        });
+        renderSearchResults(result);
+      } catch (err) {
+        kbContentScroll.innerHTML = `<div class="empty">知识检索失败：${escapeHtml(err.message)}</div>`;
+      } finally {
+        knowledgeSearchBtn.disabled = false;
+        knowledgeSearchBtn.textContent = "检索";
+      }
+    }
+
+    async function handleKnowledgeSync() {
+      knowledgeSyncBtn.disabled = true;
+      knowledgeSyncBtn.textContent = "同步中...";
+      try {
+        const result = await postJson("/api/knowledge/sync", {});
+        alert(`同步完成：${JSON.stringify(result.result || {}, null, 2)}`);
+      } catch (err) {
+        alert(`同步失败：${err.message}`);
+      } finally {
+        knowledgeSyncBtn.disabled = false;
+        knowledgeSyncBtn.textContent = "同步向量库";
+      }
+    }
+
+    function resizeChatInput() {
+      const maxHeight = 144;
+      chatInput.style.height = "auto";
+      const nextHeight = Math.min(chatInput.scrollHeight, maxHeight);
+      chatInput.style.height = `${nextHeight}px`;
+      chatInput.style.overflowY =
+        chatInput.scrollHeight > maxHeight ? "auto" : "hidden";
+    }
+
+    async function handleChat() {
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      bubble(message, "user");
+      chatInput.value = "";
+      resizeChatInput();
+      sendBtn.disabled = true;
+
+      try {
+        const payload = {
+          message,
+          mode: "chat",
+          history: chatHistory.slice(0, -1),
+          context: { session_id: chatSessionId },
+          current_incident: null
+        };
+        const result = await postJson("/api/chat", payload);
+        bubble(result.content || "收到，但没有返回内容。", "agent");
+        addTraceSession(result.meta?.tool_traces || []);
+        loadChatSessions().catch(err => {
+          console.error("refresh chat sessions failed", err);
+        });
+      } catch (err) {
+        bubble(`对话失败：${err.message}`, "agent");
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function handleInspection() {
+      startInspectionBtn.disabled = true;
+      startInspectionBtn.textContent = "巡检中...";
+
+      try {
+        const result = await postJson("/api/chat/inspection", {});
+        bubble(result.content || "巡检已完成。", "agent");
+        addTraceSession(result.meta?.tool_traces || []);
+        await loadChangeEvents();
+        await loadMetrics();
+      } catch (err) {
+        bubble(`巡检失败：${err.message}`, "agent");
+      } finally {
+        startInspectionBtn.disabled = false;
+        startInspectionBtn.textContent = "▶ 启动巡检";
+      }
+    }
+
+    async function bootstrap() {
+      initializeChatSidebar();
+      await restoreCurrentChatSession();
+
+      try {
+        await loadChatSessions();
+      } catch (err) {
+        chatSessionList.innerHTML = `
+          <div class="empty">
+            会话列表加载失败：${escapeHtml(err.message)}
+          </div>
+        `;
+      }
+
+      try {
+        await loadMetrics();
+      } catch (err) {
+        console.error("load metrics failed", err);
+      }
+
+      try {
+        await loadChangeEvents();
+      } catch (err) {
+        changeTimeline.innerHTML = `<div class="empty">变更归档加载失败：${escapeHtml(err.message)}</div>`;
+      }
+
+      await pollFiringIncidents();
+
+      renderTraceSessions();
+    }
+
+    sidebarTabs.forEach(tab => {
+      tab.addEventListener("click", () => switchSidebarPanel(tab.dataset.panel));
+    });
+
+    kbMenuItems.forEach(item => {
+      item.addEventListener("click", () => {
+        setKnowledgeMenu(item.dataset.kbView);
+        refreshKnowledgeView();
+      });
+    });
+
+    alertIncidentFilterButtons.forEach(button => {
+      button.addEventListener("click", async () => {
+        const filter = button.dataset.alertListFilter;
+        if (!filter || filter === alertAnalysisState.incidentFilter) return;
+
+        alertAnalysisState.incidentFilter = filter;
+        const visibleItems = alertAnalysisState.items.filter(
+          item => item.status === filter
+        );
+        const selectedIsVisible = visibleItems.some(
+          item => item.incident_id === alertAnalysisState.selectedIncidentId
+        );
+
+        if (!selectedIsVisible && visibleItems.length) {
+          const incident = visibleItems[0];
+          alertAnalysisState.selectedIncidentId = incident.incident_id;
+          alertAnalysisState.analysisId = "";
+          alertAnalysisState.lastSequence = 0;
+          alertAnalysisState.events = [];
+          setSelectedAlertHeader(incident);
+          updateAnalysisStatus("pending");
+          renderAllAnalysisEvents();
+          renderAlertIncidentList();
+          await loadIncidentAnalysis(incident.incident_id);
+          return;
+        }
+
+        renderAlertIncidentList();
+      });
+    });
+
+    toggleChatSidebarBtn.addEventListener("click", () => {
+      if (alertAnalysisState.mode === "alert") {
+        setWorkspaceMode("chat");
+        setSidebarCollapsed(false, "chat");
+        return;
+      }
+
+      const collapsed = chatWorkspace.classList.contains(
+        "chat-sidebar-collapsed"
+      );
+
+      setSidebarCollapsed(!collapsed);
+    });
+
+    alertModeBtn.addEventListener("click", async () => {
+      clearTimeout(alertAnalysisState.autoSwitchTimer);
+      alertModeBtn.classList.remove("alert-arrived");
+
+      if (alertAnalysisState.mode === "alert") {
+        const collapsed = chatWorkspace.classList.contains(
+          "chat-sidebar-collapsed"
+        );
+        setSidebarCollapsed(!collapsed, "alert");
+        return;
+      }
+
+      setWorkspaceMode("alert");
+      setSidebarCollapsed(false, "alert");
+
+      if (!alertAnalysisState.selectedIncidentId) {
+        const firstIncident = alertAnalysisState.items[0];
+        if (firstIncident) {
+          alertAnalysisState.selectedIncidentId = firstIncident.incident_id;
+          setSelectedAlertHeader(firstIncident);
+          renderAlertIncidentList();
+        }
+      }
+
+      if (alertAnalysisState.selectedIncidentId) {
+        await loadIncidentAnalysis(alertAnalysisState.selectedIncidentId);
+      }
+    });
+
+    newChatBtn.addEventListener("click", createNewChatSession);
+
+    openSopBtn.addEventListener("click", openKnowledgeModal);
+    logoutBtn.addEventListener("click", async () => {
+      logoutBtn.disabled = true;
+      try {
+        await authenticatedFetch("/api/auth/logout", { method: "POST" });
+      } finally {
+        location.replace("/login");
+      }
+    });
+    closeSopBtn.addEventListener("click", () => sopModal.classList.remove("show"));
+    sopModal.addEventListener("click", evt => {
+      if (evt.target === sopModal) {
+        sopModal.classList.remove("show");
+      }
+    });
+
+    knowledgeSearchBtn.addEventListener("click", handleKnowledgeSearch);
+    knowledgeSearchInput.addEventListener("keydown", evt => {
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        handleKnowledgeSearch();
+      }
+    });
+    knowledgeSyncBtn.addEventListener("click", handleKnowledgeSync);
+
+    closeIncidentsBtn.addEventListener("click", closeIncidentDrawer);
+    refreshIncidentsBtn.addEventListener("click", () => {
+      loadIncidents(incidentState.selectedId);
+    });
+    incidentDrawer.addEventListener("click", evt => {
+      if (evt.target === incidentDrawer) {
+        closeIncidentDrawer();
+      }
+    });
+    incidentFilterButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        incidentState.filter = button.dataset.incidentFilter;
+        incidentFilterButtons.forEach(item => {
+          item.classList.toggle("active", item === button);
+        });
+        incidentState.selectedId = "";
+        loadIncidents();
+      });
+    });
+    document.addEventListener("keydown", evt => {
+      if (evt.key === "Escape" && incidentDrawer.classList.contains("show")) {
+        closeIncidentDrawer();
+      }
+    });
+
+    sendBtn.addEventListener("click", handleChat);
+    chatInput.addEventListener("input", resizeChatInput);
+    chatInput.addEventListener("keydown", evt => {
+      if (
+        evt.key === "Enter"
+        && !evt.shiftKey
+        && !evt.isComposing
+      ) {
+        evt.preventDefault();
+        handleChat();
+      }
+    });
+
+    startInspectionBtn.addEventListener("click", handleInspection);
+
+    bootstrap();
+    startAutoRefresh();
+  </script>
+</body>
+</html>

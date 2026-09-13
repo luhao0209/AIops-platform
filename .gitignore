@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite*
+*.log
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+.DS_Store
+
+# Runtime data and local credentials
+aiops-agent/data/
+aiops-agent/agent-executor/data/memory/*.db
+aiops-agent/sop-service/data/
+**/main-model.env
+**/model-secrets/
+
+# These archives exceed GitHub's normal per-file limit. Publish them as
+# GitHub Release assets and keep the installer plus manifest in the repository.
+一键部署/images/*.tar
+一键部署/deployment.env
+一键部署/.aiops-installer-state/

@@ -1,0 +1,47 @@
+{
+  "air_gapped": false,
+  "application_image_count": 6,
+  "delivery_name": "一键部署",
+  "dependency_boundary": {
+    "application_images": "bundled and checksummed",
+    "project_and_deployment_files": "embedded in the self-extracting installer",
+    "system_packages_and_third_party_images": "downloaded from configured domestic mirrors"
+  },
+  "files": [
+    {
+      "path": "一键部署/aiops-installer-20260901.1-linux-amd64.run",
+      "sha256": "ccb1251eeda892c67c1be7c600aafe17d4ca25bcb4c6fdd5319996e9ef24e5af",
+      "size": 548739
+    },
+    {
+      "path": "一键部署/images/image-bundle.json",
+      "sha256": "0c0efc0b7fa835c81dec1ad60a185b9a20f221b42dc4171c1440fde3ad2b915b",
+      "size": 886
+    },
+    {
+      "path": "一键部署/images/business-images.tar",
+      "sha256": "147e99e9073109998f4495e54b80d747229fad850a6ffb203e464d9abe523f7d",
+      "size": 191929344
+    },
+    {
+      "path": "一键部署/images/agent-images.tar",
+      "sha256": "6cc90cdec8a6b5c523d078c3ffadefdd9a39a1db93e999104ff3a6d1ff7c2d06",
+      "size": 1867167744
+    },
+    {
+      "path": "一键部署/deployment.env.example",
+      "sha256": "6464c28b362660aebc8178c253d1fffdfa3817922ba98b44916ad62cb2f5f409",
+      "size": 1404
+    },
+    {
+      "path": "一键部署/docs/一键部署交付说明.md",
+      "sha256": "de1b8b98da57eb2775405ba79e91a404da8a4323c38f2344b7ea5089d6c12161",
+      "size": 7536
+    }
+  ],
+  "product": "AIOps four-node deployment",
+  "profile": "domestic-mirrors-with-prebuilt-application-images",
+  "schema_version": 1,
+  "target": "linux-amd64 controller plus four linux-amd64 servers",
+  "version": "20260901.1"
+}

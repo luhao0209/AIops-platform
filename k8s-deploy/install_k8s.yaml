@@ -1,0 +1,39 @@
+---
+- name: 安装 Kubernetes 核心组件 (kubeadm, kubelet, kubectl)
+  hosts: k8s_cluster
+  become: yes
+  tasks:
+    - name: 1. 创建 apt 密钥存放目录
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: 2. 下载并添加阿里云 Kubernetes apt 密钥
+      shell: |
+        curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: 3. 添加阿里云 Kubernetes apt 仓库
+      copy:
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.30/deb/ /\n"
+
+    - name: 4. 更新 apt 缓存并安装 K8s 组件
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: yes
+
+    - name: 5. 锁定 K8s 组件版本，防止后续 apt update 被意外升级
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl

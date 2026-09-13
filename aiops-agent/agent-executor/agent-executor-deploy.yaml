@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-executor
+  namespace: aiops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent-executor
+  template:
+    metadata:
+      labels:
+        app: agent-executor
+    spec:
+      serviceAccountName: agent-executor-sa
+      nodeSelector:
+        kubernetes.io/hostname: worker-ai
+      containers:
+        - name: agent-executor
+          image: aiops-agent-executor:v112
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9300
+          env:
+            - name: MODEL_API_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: agent-executor-llm
+                  key: MODEL_API_BASE
+                  optional: true
+            - name: MODEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agent-executor-llm
+                  key: MODEL_API_KEY
+                  optional: true
+            - name: MODEL_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: agent-executor-llm
+                  key: MODEL_NAME
+                  optional: true
+            - name: MODEL_TEMPERATURE
+              value: "0.2"
+            - name: AIOPS_SERVICE_LATENCY_BUCKET_METRIC
+              value: "gateway_http_request_duration_seconds_bucket"
+            - name: AIOPS_SERVICE_REQUEST_METRIC
+              value: "gateway_http_requests_total"
+            - name: AIOPS_SCALE_MAX_REPLICAS
+              value: "3"
+            - name: MODEL_TIMEOUT
+              value: "60"
+            - name: CHAT_RESPONSE_GUARD_MODE
+              value: "single_pass"
+            - name: KNOWLEDGE_API_BASE
+              value: "http://sop-service.aiops.svc.cluster.local:9200"
+            - name: TOKEN_USAGE_FILE
+              value: "/app/data/token-usage/agent-executor.json"
+            - name: SUMMARY_MODEL_API_BASE
+              value: "https://api.deepseek.com/v1"
+            - name: SUMMARY_MODEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agent-summary-model
+                  key: SUMMARY_MODEL_API_KEY
+            - name: SUMMARY_MODEL_NAME
+              value: "deepseek-chat"
+            - name: SUMMARY_MODEL_TIMEOUT
+              value: "30"
+            - name: SUMMARY_MODEL_TEMPERATURE
+              value: "0.1"
+          volumeMounts:
+            - name: agent-data
+              mountPath: /app/data
+      volumes:
+        - name: agent-data
+          hostPath:
+            path: /root/aiops-agent/data
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-executor
+  namespace: aiops
+spec:
+  selector:
+    app: agent-executor
+  ports:
+    - protocol: TCP
+      port: 9300
+      targetPort: 9300
