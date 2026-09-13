@@ -82,7 +82,6 @@ chmod +x aiops-installer-20260901.1-linux-amd64.run
 - Web 管理员用户名和密码；
 - `CONFIRM_FRESH_SERVERS=YES`。
 
-模型接口需要兼容 OpenAI Chat Completions，请只填写 API 前缀，不要在末尾添加 `/chat/completions`。配置文件含有密码和模型密钥，不要提交到 GitHub。
 
 ### 4. 预检并安装
 
@@ -101,7 +100,7 @@ chmod 600 deployment.env
 ./aiops-installer-20260901.1-linux-amd64.run --ssh-private
 ```
 
-安装器会依次完成环境检查、Kubernetes 初始化、应用镜像导入、业务与监控组件部署、AIOps 服务部署以及接口验收。任一步失败都会停止，可以排除问题后使用相同配置继续运行；它不会自动执行 `kubeadm reset`，也不会自动删除已有 PVC 或数据库。
+安装器会依次完成环境检查、Kubernetes 初始化、应用镜像导入、业务与监控组件部署、AIOps 服务部署以及接口验收
 
 ### 5. 访问服务
 
@@ -150,7 +149,7 @@ chmod 600 deployment.env
 │   ├── kube-state-metrics.yaml          # Kubernetes 对象指标采集
 │   ├── mysql-native.yaml                # MySQL 部署
 │   └── redis-native.yaml                # Redis 部署
-└── 一键部署/                            # 推荐的一键交付包
+└── 一键部署/                            
 ```
 
 源码目录中的清单用于开发调试。修改源码后，需要重新构建对应镜像并更新清单；只想运行项目时，直接使用一键安装包即可。
