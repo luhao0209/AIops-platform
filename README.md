@@ -7,6 +7,12 @@
 
 项目包含业务、监控和智能运维三个部分。业务侧使用网关、Redis 和 MySQL；监控侧使用 Prometheus、Alertmanager、Grafana、Loki 和 Promtail；智能运维侧包含 Web 工作台、Agent 执行器、巡检引擎、变更监听和知识库服务。
 
+## 在线演示
+
+[打开 AIOps Web 工作台](https://luhao0209.github.io/AIops-platform/)
+
+演示页保存了一组脱敏的数据快照，可以查看健康指标、运维对话、工具调用记录、知识库和历史告警分析。它不连接真实 Kubernetes 集群，也不会执行回滚、扩容等变更操作。
+
 ## 推荐部署方式：一键安装包
 
 如果只是想把项目运行起来，建议使用仓库中的一键安装包，不需要逐个研究外层源码目录里的 YAML。
