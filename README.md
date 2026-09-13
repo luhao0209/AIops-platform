@@ -1,4 +1,4 @@
-# Kubernetes AIOps 实验平台
+# AIOps 实验平台
 
 这是一个面向运维与 SRE 场景的 AIOps 项目。仓库自带一套秒杀订单服务，Agent 会围绕它查询指标、日志、Kubernetes 状态和发布变更。平台主要提供两类能力：
 
