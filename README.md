@@ -26,11 +26,11 @@
 └── SHA256SUMS
 ```
 
-`.run` 安装器内已经包含项目源码、Ansible Playbook、Kubernetes 清单和验收逻辑；两个镜像归档包含当前版本的业务与 AIOps 应用镜像。部署时仍需联网下载系统包和 Prometheus、MySQL、Redis 等第三方基础镜像，因此它是“应用离线交付包”，不是完全断网安装包。
+`.run` 安装器内已经包含项目源码、Ansible Playbook、Kubernetes 清单和验收逻辑；两个镜像归档包含当前版本的业务与 AIOps 应用镜像。部署时仍需联网下载系统包和 Prometheus、MySQL、Redis 等第三方基础镜像
 
 ### 1. 准备机器
 
-准备一台 Linux amd64 控制机和四台 Ubuntu/Debian amd64 服务器。控制机也可以直接使用其中的 master 节点。
+准备一台 Linux 控制机和四台 Ubuntu 服务器。控制机也可以直接使用其中的 master 节点。
 
 每台目标服务器建议至少满足：
 
@@ -43,7 +43,7 @@
 
 ### 2. 下载完整交付包
 
-请从项目的 [Releases 页面](../../releases) 下载“一键部署”完整交付包并解压。不要只下载 GitHub 自动生成的 `Source code` 压缩包，因为其中不包含体积较大的应用镜像。
+请从项目的 [Releases 页面](../../releases) 下载“一键部署”完整交付包并解压。不要只下载 GitHub 自动生成的 `Source code` 压缩包，因为其中不包含体积较大的应用镜像
 
 开始安装前，请确认 `aiops-installer-20260901.1-linux-amd64.run` 与 `images/` 位于同一目录，并且 `images/` 中包含以下文件：
 
